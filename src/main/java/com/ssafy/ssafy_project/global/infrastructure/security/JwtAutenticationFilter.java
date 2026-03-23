@@ -16,6 +16,7 @@ public class JwtAutenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         // TODO : JWT 토큰 유효성 검증 및 Response 객체에 User 정보 넣어주고, 오류나면 오류 객체 넣어주기
+        filterChain.doFilter(request, response);
     }
 
     @Override

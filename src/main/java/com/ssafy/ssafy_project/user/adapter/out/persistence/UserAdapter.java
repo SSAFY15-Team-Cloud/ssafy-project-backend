@@ -1,9 +1,8 @@
 package com.ssafy.ssafy_project.user.adapter.out.persistence;
 
-import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
-import com.ssafy.ssafy_project.user.domain.user.User;
+import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
