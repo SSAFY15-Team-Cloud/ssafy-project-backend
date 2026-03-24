@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                            .requestMatchers("/login", "/reissue")
+                            .requestMatchers("/login", "/reissue", "/api/**")
                             .permitAll().anyRequest().authenticated()
                     ).addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -62,6 +62,7 @@ public class SecurityConfig {
         ccf.setAllowCredentials(true);
 //        ccf.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         // TODO : 개발용 임시 Allow
+        ccf.setAllowedOriginPatterns(List.of("*"));
         ccf.setAllowedHeaders(List.of("*"));
         ccf.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

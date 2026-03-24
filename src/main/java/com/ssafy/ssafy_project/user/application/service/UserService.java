@@ -5,7 +5,7 @@ import com.ssafy.ssafy_project.global.domain.entity.Tokens;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.ResponseLogin;
 import com.ssafy.ssafy_project.user.application.port.in.LoginPortIn;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
-import com.ssafy.ssafy_project.user.domain.user.User;
+import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

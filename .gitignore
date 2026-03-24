@@ -65,3 +65,7 @@ node_modules/
 *.trace.db
 
 src/main/resources/application.properties
+/Dockerfile
+/docker-compose.yml
+/.dockerignore
+/.gitmessage.txt

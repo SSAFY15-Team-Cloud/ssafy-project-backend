@@ -1,4 +1,4 @@
-package com.ssafy.ssafy_project.user.domain.user;
+package com.ssafy.ssafy_project.user.domain;
 
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import jakarta.persistence.Entity;
