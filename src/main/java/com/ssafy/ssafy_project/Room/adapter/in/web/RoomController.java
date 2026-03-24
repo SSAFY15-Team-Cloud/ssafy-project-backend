@@ -1,24 +1,22 @@
 package com.ssafy.ssafy_project.Room.adapter.in.web;
 
 import com.ssafy.ssafy_project.Room.adapter.in.web.dto.request.CreateRoomRequest;
+import com.ssafy.ssafy_project.Room.adapter.in.web.dto.request.UpdateRoomRequest;
 import com.ssafy.ssafy_project.Room.adapter.in.web.dto.response.CreateRoomResponse;
-import com.ssafy.ssafy_project.Room.application.port.in.CreateRoomCommand;
-import com.ssafy.ssafy_project.Room.application.port.in.CreateRoomPortIn;
-import com.ssafy.ssafy_project.Room.application.port.in.CreateRoomResult;
+import com.ssafy.ssafy_project.Room.adapter.in.web.dto.response.UpdateRoomResponse;
+import com.ssafy.ssafy_project.Room.application.port.in.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/rooms")
 public class RoomController {
     private final CreateRoomPortIn createRoomPortIn;
+    private final UpdateRoomPortIn updateRoomPortIn;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -33,6 +31,20 @@ public class RoomController {
                         createRoomResult.hostId(),
                         createRoomResult.roomCode(),
                         createRoomResult.createdAt()
+                ));
+    }
+
+    @PutMapping("/{roomId}")
+    public ResponseEntity<UpdateRoomResponse> updateRoom(
+            @RequestBody UpdateRoomRequest updateRoomRequest,
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId) {
+        UpdateRoomCommand updateRoomCommand = new UpdateRoomCommand(roomId, updateRoomRequest.title(), userId);
+        UpdateRoomResult updateRoomResult = updateRoomPortIn.updateRoom(updateRoomCommand);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new UpdateRoomResponse(
+                        updateRoomResult.roomId(),
+                        updateRoomResult.title()
                 ));
     }
 }

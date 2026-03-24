@@ -23,4 +23,8 @@ public class Room {
         this.title = title;
         this.hostId = hostId;
     }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 }

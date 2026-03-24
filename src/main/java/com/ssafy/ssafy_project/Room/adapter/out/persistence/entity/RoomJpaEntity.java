@@ -52,4 +52,7 @@ public class RoomJpaEntity {
         this.endedTime = LocalDateTime.now();
     }
 
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 }
