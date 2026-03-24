@@ -54,7 +54,8 @@ public class RoomController {
             @PathVariable Long roomId,
             @AuthenticationPrincipal Long userId
     ){
-        deleteRoomPortIn.deleteRoom(roomId, userId);
+        DeleteRoomCommand deleteRoomCommand = new DeleteRoomCommand(roomId, userId);
+        deleteRoomPortIn.deleteRoom(deleteRoomCommand);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

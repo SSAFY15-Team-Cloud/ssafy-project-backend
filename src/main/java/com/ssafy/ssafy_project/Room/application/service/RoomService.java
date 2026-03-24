@@ -1,6 +1,5 @@
 package com.ssafy.ssafy_project.Room.application.service;
 
-import com.ssafy.ssafy_project.Room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.Room.application.port.in.*;
 import com.ssafy.ssafy_project.Room.application.port.out.DeleteRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.LoadRoomPortOut;
@@ -45,6 +44,11 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         if(!room.getHostId().equals(userId)){
             throw new RuntimeException("방 생성자만 수정할 수 있습니다.");
         }
+
+        if(!room.getStatus().equals("RUNNING")){
+            throw new RuntimeException("닫힌 방은 수정할 수 없습니다.");
+        }
+
         room.updateTitle(title);
         Room updatedRoom = updateRoomPortOut.updateRoom(room);
         return new UpdateRoomResult(
@@ -55,11 +59,17 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
 
     @Transactional
     @Override
-    public void deleteRoom(Long roomId, Long userId) {
+    public void deleteRoom(DeleteRoomCommand deleteRoomCommand) {
+        Long roomId = deleteRoomCommand.roomId();
+        Long userId = deleteRoomCommand.userId();
         Room room = loadRoomPortOut.loadById(roomId);
         if(!room.getHostId().equals(userId)){
             throw new RuntimeException("작성자만 방을 삭제할 수 있습니다.");
         }
+        if(!room.getStatus().equals("RUNNING")){
+            throw new RuntimeException("이미 닫힌 방입니다.");
+        }
+
         deleteRoomPortOut.deleteRoom(roomId);
     }
 }
