@@ -2,7 +2,7 @@ package com.ssafy.ssafy_project.Room.adapter.out.persistence;
 
 import com.ssafy.ssafy_project.Room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.Room.adapter.out.persistence.repository.RoomJpaRepository;
-import com.ssafy.ssafy_project.Room.application.port.in.UpdateRoomCommand;
+import com.ssafy.ssafy_project.Room.application.port.out.DeleteRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.UpdateRoomPortOut;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoomPortOut {
+public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoomPortOut, DeleteRoomPortOut {
 
     private final RoomJpaRepository roomJpaRepository;
     private final UserJpaRepository userJpaRepository;
@@ -62,6 +62,13 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
                 roomJpaEntity.getRoomCode(),
                 roomJpaEntity.getCreatedTime()
         );
+    }
+
+    @Override
+    public void deleteRoom(Long roomId) {
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+        roomJpaEntity.endRoom();
     }
 }
 

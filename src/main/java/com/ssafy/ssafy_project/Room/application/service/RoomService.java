@@ -1,6 +1,8 @@
 package com.ssafy.ssafy_project.Room.application.service;
 
+import com.ssafy.ssafy_project.Room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.Room.application.port.in.*;
+import com.ssafy.ssafy_project.Room.application.port.out.DeleteRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.Room.application.port.out.UpdateRoomPortOut;
@@ -12,11 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn {
+public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRoomPortIn {
 
     private final SaveRoomPortOut saveRoomPortOut;
     private final UpdateRoomPortOut updateRoomPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
+    private final DeleteRoomPortOut deleteRoomPortOut;
 
     @Transactional
     @Override
@@ -50,4 +53,13 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn {
         );
     }
 
+    @Transactional
+    @Override
+    public void deleteRoom(Long roomId, Long userId) {
+        Room room = loadRoomPortOut.loadById(roomId);
+        if(!room.getHostId().equals(userId)){
+            throw new RuntimeException("작성자만 방을 삭제할 수 있습니다.");
+        }
+        deleteRoomPortOut.deleteRoom(roomId);
+    }
 }

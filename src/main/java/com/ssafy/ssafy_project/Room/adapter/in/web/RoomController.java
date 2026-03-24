@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class RoomController {
     private final CreateRoomPortIn createRoomPortIn;
     private final UpdateRoomPortIn updateRoomPortIn;
+    private final DeleteRoomPortIn deleteRoomPortIn;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -46,5 +47,14 @@ public class RoomController {
                         updateRoomResult.roomId(),
                         updateRoomResult.title()
                 ));
+    }
+
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<Void> closeRoom(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ){
+        deleteRoomPortIn.deleteRoom(roomId, userId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
