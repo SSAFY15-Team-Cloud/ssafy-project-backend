@@ -31,6 +31,7 @@ public class RoomController {
                         createRoomResult.roomId(),
                         createRoomResult.title(),
                         createRoomResult.hostId(),
+                        createRoomResult.roomCode(),
                         createRoomResult.createdAt()
                 ));
     }

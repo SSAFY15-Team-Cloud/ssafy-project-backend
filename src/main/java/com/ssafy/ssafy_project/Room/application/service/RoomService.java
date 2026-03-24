@@ -22,6 +22,7 @@ public class RoomService implements CreateRoomPortIn {
                 savedRoom.getRoomId(),
                 savedRoom.getTitle(),
                 savedRoom.getHostId(),
+                savedRoom.getRoomCode(),
                 savedRoom.getCreatedAt()
         );
     }

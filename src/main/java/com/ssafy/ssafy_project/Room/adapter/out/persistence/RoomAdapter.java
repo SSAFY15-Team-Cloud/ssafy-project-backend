@@ -26,7 +26,8 @@ public class RoomAdapter implements SaveRoomPortOut {
                 roomJpaEntity.getRoomId(),
                 roomJpaEntity.getTitle(),
                 roomJpaEntity.getUserJpaEntity().getUserId(),
-                roomJpaEntity.getCreatedAt()
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getCreatedTime()
         );
     }
 }

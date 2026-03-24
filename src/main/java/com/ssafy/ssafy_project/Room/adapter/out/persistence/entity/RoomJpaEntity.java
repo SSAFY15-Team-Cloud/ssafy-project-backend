@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -23,16 +24,32 @@ public class RoomJpaEntity {
 
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_id")
+    @JoinColumn(name = "owner_id")
     private UserJpaEntity userJpaEntity;
 
-    @Column(updatable = false)
+    @Column(name = "room_code", unique = true)
+    private String roomCode;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "ended_time")
+    private LocalDateTime endedTime;
+
+    @Column(name = "created_time", updatable = false)
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private LocalDateTime createdTime;
 
     public RoomJpaEntity(String title, UserJpaEntity userJpaEntity){
         this.title = title;
         this.userJpaEntity = userJpaEntity;
+        this.status = "RUNNING";
+        this.roomCode = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    public void endRoom() {
+        this.status = "ENDED";
+        this.endedTime = LocalDateTime.now();
     }
 
 }

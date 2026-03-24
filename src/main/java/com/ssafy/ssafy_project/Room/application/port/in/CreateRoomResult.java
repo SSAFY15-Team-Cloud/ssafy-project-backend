@@ -6,6 +6,7 @@ public record CreateRoomResult(
         Long roomId,
         String title,
         Long hostId,
+        String roomCode,
         LocalDateTime createdAt
 ) {
 }

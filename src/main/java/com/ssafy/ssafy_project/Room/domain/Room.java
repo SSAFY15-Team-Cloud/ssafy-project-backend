@@ -8,12 +8,14 @@ public class Room {
     private Long roomId;
     private String title;
     private Long hostId;
+    private String roomCode;
     private LocalDateTime createdAt;
 
-    public Room(Long roomId, String title, Long hostId, LocalDateTime createdAt){
+    public Room(Long roomId, String title, Long hostId, String roomCode, LocalDateTime createdAt){
         this.roomId = roomId;
         this.title = title;
         this.hostId = hostId;
+        this.roomCode = roomCode;
         this.createdAt = createdAt;
     }
 
