@@ -19,24 +19,24 @@ public class RoomJpaEntity {
     @Column(name ="room_id")
     private Long roomId;
 
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
+    @JoinColumn(name = "owner_id", nullable = false)
     private UserJpaEntity userJpaEntity;
 
-    @Column(name = "room_code", unique = true)
+    @Column(name = "room_code", unique = true, nullable = false)
     private String roomCode;
 
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private String status;
 
     @Column(name = "ended_time")
     private LocalDateTime endedTime;
 
-    @Column(name = "created_time", updatable = false)
+    @Column(name = "created_time", updatable = false, nullable = false)
     @CreationTimestamp
     private LocalDateTime createdTime;
 

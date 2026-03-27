@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoomPortOut, DeleteRoomPortOut {
+public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoomPortOut, DeleteRoomPortOut {
 
     private final RoomJpaRepository roomJpaRepository;
     private final UserJpaRepository userJpaRepository;
@@ -38,7 +38,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
 
     @Override
     public Room updateRoom(Room room) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(room.getRoomId())
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(room.getRoomId())
                 .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
 
 
@@ -57,7 +57,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
 
     @Override
     public Room loadById(Long roomId) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(roomId)
                 .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
         return new Room(
                 roomJpaEntity.getRoomId(),
@@ -72,7 +72,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
 
     @Override
     public void deleteRoom(Long roomId) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(roomId)
                 .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
         roomJpaEntity.endRoom();
     }
