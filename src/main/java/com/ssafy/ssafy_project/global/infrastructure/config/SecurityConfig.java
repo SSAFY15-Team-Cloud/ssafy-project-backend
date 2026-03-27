@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -41,14 +43,14 @@ public class SecurityConfig {
         // httpBasic은 .... 나중에
         // sessionManagement token으로 관리할거임
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors->cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                            .requestMatchers("/login", "/reissue", "/api/**")
-                            .permitAll().anyRequest().authenticated()
-                    ).addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers("/login", "/reissue", "/api/**")
+                        .permitAll().anyRequest().authenticated()
+                ).addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -71,5 +73,10 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", ccf);
 
         return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
