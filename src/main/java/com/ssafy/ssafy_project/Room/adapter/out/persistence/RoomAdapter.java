@@ -28,7 +28,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
         return new Room(
                 roomJpaEntity.getRoomId(),
                 roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getUserId(),
+                roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
                 roomJpaEntity.getStatus(),
                 roomJpaEntity.getEndedTime(),
@@ -47,7 +47,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
         return new Room(
                 roomJpaEntity.getRoomId(),
                 roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getUserId(),
+                roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
                 roomJpaEntity.getStatus(),
                 roomJpaEntity.getEndedTime(),
@@ -62,7 +62,7 @@ public class RoomAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoom
         return new Room(
                 roomJpaEntity.getRoomId(),
                 roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getUserId(),
+                roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
                 roomJpaEntity.getStatus(),
                 roomJpaEntity.getEndedTime(),

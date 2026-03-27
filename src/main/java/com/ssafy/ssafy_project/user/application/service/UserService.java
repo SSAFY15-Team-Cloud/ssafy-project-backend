@@ -2,33 +2,33 @@ package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.global.domain.entity.Tokens;
-import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.ResponseLogin;
 import com.ssafy.ssafy_project.user.application.port.in.LoginPortIn;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/*
-    PortIn의 구현체
- */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService implements LoginPortIn {
 
     private final LoadUserPortOut loadUserPortOut;
     private final JwtPortOut jwtPortOut;
 
     @Override
-    public Tokens login(String username, String password) {
+    public Tokens login(String email, String password) {
+        User user = loadUserPortOut.loadByEmail(email);
 
-
-        User foundedUser = loadUserPortOut.findByUsername(username);
-
-        if(!foundedUser.getUsername().equals(username) || !foundedUser.getPassword().equals(password)) {
-            throw new RuntimeException("비밀번호 불일치");
+        if (user.isDeleted()) {
+            throw new RuntimeException("삭제된 사용자입니다.");
         }
 
-        return jwtPortOut.generate(foundedUser.getId());
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+
+        return jwtPortOut.generate(user.getId());
     }
 }
