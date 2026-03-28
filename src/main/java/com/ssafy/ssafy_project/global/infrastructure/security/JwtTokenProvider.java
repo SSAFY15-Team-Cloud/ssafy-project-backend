@@ -4,9 +4,8 @@ import com.ssafy.ssafy_project.global.domain.entity.TokenType;
 import com.ssafy.ssafy_project.global.domain.entity.Tokens;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -54,7 +53,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject("" + userId)
-                .claim("type", TokenType.REFRESH_TOKEN.getTypeName())
+                .claim("type", TokenType.ACCESS_TOKEN.getTypeName())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(atExp))
                 .signWith(secretKey)
@@ -75,7 +74,21 @@ public class JwtTokenProvider {
     }
 
     public boolean validateToken(String token, TokenType tokenType) {
-        return false;
+        try {
+            Claims claims = parseClaims(token);
+            String actualType = claims.get("type", String.class);
+
+            if(tokenType == null) return false;
+
+            return tokenType.getTypeName().equals(actualType);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public Long extractUserId(String token) {
+        Claims claims = parseClaims(token);
+        return Long.parseLong(claims.getSubject());
     }
 
     private Claims parseClaims(String token) {
