@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class User {
 
-    private Long id;
+    private final Long id;
     private String email;
     private String password;
     private UserRole role;
@@ -17,5 +17,15 @@ public class User {
     private String name;
     private String profileImageUrl;
     private boolean deleted;
+
+    public User(String email, String password, String nickname, String name, UserRole role, String profileImageUrl) {
+        this.id = null;
+        this.email = email;
+        this.password = password;
+        this.nickname = nickname;
+        this.name = name;
+        this.role = role;
+        this.profileImageUrl = profileImageUrl;
+    }
 
 }
