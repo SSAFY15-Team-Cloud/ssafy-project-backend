@@ -49,7 +49,7 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(Long userId) {
         Instant now = Instant.now();
-        Instant atExp = now.plus(expirationTime, ChronoUnit.SECONDS);
+        Instant atExp = now.plus(expirationTime, ChronoUnit.MILLIS);
 
         return Jwts.builder()
                 .subject("" + userId)
@@ -62,7 +62,7 @@ public class JwtTokenProvider {
 
     public String generateRefreshToken(Long userId) {
         Instant now = Instant.now();
-        Instant rtExp = now.plus(refreshExpirationTime, ChronoUnit.SECONDS);
+        Instant rtExp = now.plus(refreshExpirationTime, ChronoUnit.MILLIS);
 
         return Jwts.builder()
                 .subject("" + userId)
