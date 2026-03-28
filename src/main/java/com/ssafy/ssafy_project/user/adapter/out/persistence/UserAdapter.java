@@ -37,6 +37,11 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
         return toDomain(userJpaEntity);
     }
 
+    @Override
+    public boolean existsByEmail(String email) {
+        return userJpaRepository.existsByEmail(email);
+    }
+
     private User toDomain(UserJpaEntity userJpaEntity) {
         return new User(
                 userJpaEntity.getId(),
