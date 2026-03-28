@@ -1,7 +1,8 @@
 package com.ssafy.ssafy_project.global.infrastructure.config;
 
 
-import com.ssafy.ssafy_project.global.infrastructure.security.JwtAutenticationFilter;
+import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
+import com.ssafy.ssafy_project.global.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAutenticationFilter jwtAutenticationFilter;
+    private final JwtPortOut jwtPortOut;
+
+    private static final String[] whiteList = {
+            "/api/auth/**"
+    };
 
     // 작업 순위1. CSRF
     // Security filter chain을 통해서 처리
@@ -48,9 +53,10 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/login", "/reissue", "/api/**")
-                        .permitAll().anyRequest().authenticated()
-                ).addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers(whiteList).permitAll()
+                        .anyRequest().authenticated()
+                ).
+                addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -73,6 +79,11 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", ccf);
 
         return source;
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtPortOut);
     }
 
     @Bean
