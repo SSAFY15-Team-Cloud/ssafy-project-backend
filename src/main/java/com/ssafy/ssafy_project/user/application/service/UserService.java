@@ -12,23 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements LoginPortIn {
+public class UserService {
 
-    private final LoadUserPortOut loadUserPortOut;
-    private final JwtPortOut jwtPortOut;
-
-    @Override
-    public Tokens login(String email, String password) {
-        User user = loadUserPortOut.loadByEmail(email);
-
-        if (user.isDeleted()) {
-            throw new RuntimeException("삭제된 사용자입니다.");
-        }
-
-        if (!user.getPassword().equals(password)) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
-        }
-
-        return jwtPortOut.generate(user.getId());
-    }
 }
+
+

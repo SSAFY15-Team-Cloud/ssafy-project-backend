@@ -1,11 +1,9 @@
 package com.ssafy.ssafy_project.user.application.service;
 
 
-import com.ssafy.ssafy_project.global.adapter.out.jwt.JwtAdapter;
+import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.global.domain.entity.TokenType;
 import com.ssafy.ssafy_project.global.domain.entity.Tokens;
-import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.RefreshTokenRequest;
-import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.SignUpRequest;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.RegisterUserPortOut;
@@ -22,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, RefreshTokenPortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final RegisterUserPortOut registerUserPortOut;
-    private final JwtAdapter jwtAdapter;
+    private final JwtPortOut jwtPortOut;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -30,11 +28,15 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
     public Tokens login(String email, String password) {
         User user = loadUserPortOut.loadByEmail(email);
 
+        if(user.isDeleted()) {
+            throw new IllegalArgumentException("삭제된 사용자 입니다.");
+        }
+
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        return jwtAdapter.generate(user.getId());
+        return jwtPortOut.generate(user.getId());
     }
 
     @Override
@@ -44,29 +46,29 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
             return;
         }
 
-        if (jwtAdapter.validate(refreshToken, TokenType.REFRESH_TOKEN)) {
+        if (!jwtPortOut.validate(refreshToken, TokenType.REFRESH_TOKEN)) {
             return;
         }
 
-        Long userId = jwtAdapter.extractUserId(refreshToken);
-        jwtAdapter.deleteRefreshToken(userId);
+        Long userId = jwtPortOut.extractUserId(refreshToken);
+        jwtPortOut.deleteRefreshToken(userId);
     }
 
     @Override
     @Transactional
     public Tokens reissue(String refreshToken) {
-        if (!jwtAdapter.validate(refreshToken, TokenType.REFRESH_TOKEN)) {
+        if (!jwtPortOut.validate(refreshToken, TokenType.REFRESH_TOKEN)) {
             throw new IllegalArgumentException("올바르지 않은 토큰");
         }
 
-        Long userId = jwtAdapter.extractUserId(refreshToken);
+        Long userId = jwtPortOut.extractUserId(refreshToken);
 
-        if (!jwtAdapter.matchesRefreshToken(userId, refreshToken)) {
+        if (!jwtPortOut.matchesRefreshToken(userId, refreshToken)) {
             throw new IllegalArgumentException("올바르지 않은 토큰");
         }
         ;
 
-        return jwtAdapter.generate(userId);
+        return jwtPortOut.generate(userId);
     }
 
     @Override
