@@ -11,11 +11,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class UserController {
-    private final LoginPortIn loginPortIn;
 
-    @PostMapping("/login")
-    public Tokens login(@RequestBody LoginRequest loginRequest) {
-        System.out.println(loginRequest);
-        return loginPortIn.login(loginRequest.getUsername(), loginRequest.getPassword());
-    }
 }
