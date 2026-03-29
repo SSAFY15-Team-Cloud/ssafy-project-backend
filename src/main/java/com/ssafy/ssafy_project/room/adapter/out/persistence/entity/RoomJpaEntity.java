@@ -16,14 +16,14 @@ import java.util.UUID;
 public class RoomJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name ="room_id")
-    private Long roomId;
+    @Column(name ="id")
+    private Long id;
 
     @Column(name = "title", nullable = false)
     private String title;
 
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private UserJpaEntity userJpaEntity;
 

@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "user")
+@Table(name = "app_user")
 public class UserJpaEntity {
 
     @Id

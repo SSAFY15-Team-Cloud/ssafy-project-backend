@@ -1,0 +1,102 @@
+package com.ssafy.ssafy_project.roomparticipant.adapter.in.web;
+
+import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
+import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
+import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
+import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTestSupport {
+
+    @BeforeEach
+    void setUp() {
+        clearPersistence();
+    }
+
+    @Test
+    void createParticipant_creates_new_participant_for_room() throws Exception {
+        UserJpaEntity owner = saveUser("owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("participant@test.com", "password123!", "participant", "Participant");
+        RoomJpaEntity room = saveRoom("Room A", owner);
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
+
+        RoomParticipantJpaEntity savedParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), participant.getId())
+                .orElseThrow();
+
+        assertThat(savedParticipant.getRoomJpaEntity().getId()).isEqualTo(room.getId());
+        assertThat(savedParticipant.getUserJpaEntity().getId()).isEqualTo(participant.getId());
+        assertThat(savedParticipant.isActive()).isTrue();
+        assertThat(savedParticipant.getJoinedTime()).isNotNull();
+    }
+
+    @Test
+    void createParticipant_rejoins_existing_participant_without_creating_duplicate() throws Exception {
+        UserJpaEntity owner = saveUser("owner2@test.com", "password123!", "owner2", "Owner2");
+        UserJpaEntity participant = saveUser("participant2@test.com", "password123!", "participant2", "Participant2");
+        RoomJpaEntity room = saveRoom("Room B", owner);
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
+
+        RoomParticipantJpaEntity firstParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), participant.getId())
+                .orElseThrow();
+        assertThat(firstParticipant.getId()).isNotNull();
+
+        Thread.sleep(20L);
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
+
+        RoomParticipantJpaEntity updatedParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), participant.getId())
+                .orElseThrow();
+
+        assertThat(roomParticipantJpaRepository.count()).isEqualTo(1);
+        assertThat(updatedParticipant.getId()).isEqualTo(firstParticipant.getId());
+        assertThat(updatedParticipant.getJoinedTime()).isAfterOrEqualTo(firstParticipant.getJoinedTime());
+    }
+
+    @Test
+    void createParticipant_requires_authentication() throws Exception {
+        mockMvc.perform(post("/api/room-participants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "ABCDEFGH"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+}

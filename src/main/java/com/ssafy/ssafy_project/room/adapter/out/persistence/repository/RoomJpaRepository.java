@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface RoomJpaRepository extends JpaRepository<RoomJpaEntity, Long> {
-    Optional<RoomJpaEntity> findByRoomId(Long roomId);
+    Optional<RoomJpaEntity> findById(Long roomId);
+
+    Optional<RoomJpaEntity> findByRoomCode(String roomCode);
 }

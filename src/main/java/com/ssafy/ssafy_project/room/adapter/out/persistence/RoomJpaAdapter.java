@@ -26,7 +26,7 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
         UserJpaEntity userJpaEntity = userJpaRepository.getReferenceById(room.getHostId());
         RoomJpaEntity roomJpaEntity = roomJpaRepository.save(new RoomJpaEntity(room.getTitle(), userJpaEntity));
         return new Room(
-                roomJpaEntity.getRoomId(),
+                roomJpaEntity.getId(),
                 roomJpaEntity.getTitle(),
                 roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
@@ -38,14 +38,14 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
 
     @Override
     public Room updateRoom(Room room) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(room.getRoomId())
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(room.getId())
                 .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
 
 
         roomJpaEntity.updateTitle(room.getTitle());
 
         return new Room(
-                roomJpaEntity.getRoomId(),
+                roomJpaEntity.getId(),
                 roomJpaEntity.getTitle(),
                 roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
@@ -57,10 +57,10 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
 
     @Override
     public Room loadById(Long roomId) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(roomId)
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
                 .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
         return new Room(
-                roomJpaEntity.getRoomId(),
+                roomJpaEntity.getId(),
                 roomJpaEntity.getTitle(),
                 roomJpaEntity.getUserJpaEntity().getId(),
                 roomJpaEntity.getRoomCode(),
@@ -71,10 +71,25 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
     }
 
     @Override
-    public void deleteRoom(Long roomId) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomId(roomId)
+    public void deleteById(Long roomId) {
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
                 .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
         roomJpaEntity.endRoom();
+    }
+
+    @Override
+    public Room loadByRoomCode(String roomCode) {
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomCode(roomCode)
+                .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
+        return new Room(
+                roomJpaEntity.getId(),
+                roomJpaEntity.getTitle(),
+                roomJpaEntity.getUserJpaEntity().getId(),
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getStatus(),
+                roomJpaEntity.getEndedTime(),
+                roomJpaEntity.getCreatedTime()
+        );
     }
 }
 

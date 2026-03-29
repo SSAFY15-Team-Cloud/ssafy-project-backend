@@ -26,7 +26,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         Room room = new Room(createRoomCommand.title(), createRoomCommand.hostId());
         Room savedRoom = saveRoomPortOut.saveRoom(room);
         return new CreateRoomResult(
-                savedRoom.getRoomId(),
+                savedRoom.getId(),
                 savedRoom.getTitle(),
                 savedRoom.getHostId(),
                 savedRoom.getRoomCode(),
@@ -52,7 +52,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         room.updateTitle(title);
         Room updatedRoom = updateRoomPortOut.updateRoom(room);
         return new UpdateRoomResult(
-                updatedRoom.getRoomId(),
+                updatedRoom.getId(),
                 updatedRoom.getTitle()
         );
     }
@@ -70,6 +70,6 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
             throw new RuntimeException("이미 닫힌 방입니다.");
         }
 
-        deleteRoomPortOut.deleteRoom(roomId);
+        deleteRoomPortOut.deleteById(roomId);
     }
 }

@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Getter
 public class Room {
-    private Long roomId;
+    private Long id;
     private String title;
     private Long hostId;
     private String roomCode;
@@ -13,8 +13,8 @@ public class Room {
     private LocalDateTime endedTime;
     private LocalDateTime createdAt;
 
-    public Room(Long roomId, String title, Long hostId, String roomCode, String status, LocalDateTime endedTime, LocalDateTime createdAt){
-        this.roomId = roomId;
+    public Room(Long id, String title, Long hostId, String roomCode, String status, LocalDateTime endedTime, LocalDateTime createdAt){
+        this.id = id;
         this.title = title;
         this.hostId = hostId;
         this.roomCode = roomCode;
