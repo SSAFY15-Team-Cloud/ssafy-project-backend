@@ -3,9 +3,11 @@ package com.ssafy.ssafy_project.global.infrastructure.config;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.global.infrastructure.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -56,7 +58,14 @@ public class SecurityConfig {
                         .requestMatchers(whiteList).permitAll()
                         .anyRequest().authenticated()
                 ).
-                addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                exceptionHandling(e -> e
+                        .authenticationEntryPoint((req, res, authException)->{
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        })
+                        .accessDeniedHandler((req,res,authException)->{
+                            res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        }))
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
