@@ -66,7 +66,7 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
         if (!jwtPortOut.matchesRefreshToken(userId, refreshToken)) {
             throw new IllegalArgumentException("올바르지 않은 토큰");
         }
-        ;
+
 
         return jwtPortOut.generate(userId);
     }

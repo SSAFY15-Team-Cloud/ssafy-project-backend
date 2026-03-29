@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (!jwtPortOut.validate(token, TokenType.ACCESS_TOKEN)) {
-            throw new IllegalArgumentException("INVALID TOKEN");
+            throw new BadCredentialsException("INVALID TOKEN");
         }
 
         Long userId = jwtPortOut.extractUserId(token);
@@ -61,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (!bearerToken.startsWith("Bearer ")) {
             //throw new JwtAuthenticationException(JwtErrorCode.INVALID_TOKEN);
-            throw new IllegalArgumentException("INVALID TOKEN");
+            throw new BadCredentialsException("INVALID TOKEN");
         }
 
         return bearerToken.substring(7);

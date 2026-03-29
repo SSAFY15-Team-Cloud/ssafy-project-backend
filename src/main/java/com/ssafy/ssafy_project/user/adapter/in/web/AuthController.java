@@ -9,6 +9,7 @@ import com.ssafy.ssafy_project.user.application.port.in.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -88,7 +89,7 @@ public class AuthController {
 
         ResponseCookie deletedCookie =cookieProvider.deleteRefreshTokenCookie();
 
-        return ResponseEntity.ok()
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .header(HttpHeaders.SET_COOKIE, deletedCookie.toString())
                 .build();
     }

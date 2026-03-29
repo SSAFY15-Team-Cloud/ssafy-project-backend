@@ -63,7 +63,7 @@ public class SecurityConfig {
                                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                         })
                         .accessDeniedHandler((req,res,authException)->{
-                            res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.sendError(HttpServletResponse.SC_FORBIDDEN);
                         }))
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
