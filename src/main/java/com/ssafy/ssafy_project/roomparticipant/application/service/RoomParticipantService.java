@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.roomparticipant.application.service;
 
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
+import com.ssafy.ssafy_project.room.application.service.RoomTerminationProcessor;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.SaveRoomParticipantCommand;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.SaveRoomParticipantPortIn;
@@ -26,6 +27,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
     private final LoadRoomPortOut loadRoomPortOut;
     private final LoadUserPortOut loadUserPortOut;
     private final FindRoomParticipantPortOut findRoomParticipantPortOut;
+    private final RoomTerminationProcessor roomTerminationProcessor;
 
     @Transactional
     @Override
@@ -63,6 +65,10 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
 
         if(found.isPresent()){
             RoomParticipant roomParticipant = found.get();
+            if(roomParticipant.getUser().getId().equals(room.getHostId())){
+                roomTerminationProcessor.terminate(room);
+                return;
+            }
             roomParticipant.leave();
             saveRoomParticipantPortOut.saveRoomParticipant(roomParticipant);
         }

@@ -28,10 +28,8 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
     private final UpdateRoomPortOut updateRoomPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
     private final LoadUserPortOut loadUserPortOut;
-    private final DeleteRoomPortOut deleteRoomPortOut;
     private final SaveRoomParticipantPortOut saveRoomParticipantPortOut;
-    private final LoadActiveRoomParticipantPortOut loadActiveRoomParticipantPortOut;
-    private final SaveRoomParticipantsPortOut saveRoomParticipantsPortOut;
+    private final RoomTerminationProcessor roomTerminationProcessor;
 
     @Transactional
     @Override
@@ -85,13 +83,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         if(!"RUNNING".equals(room.getStatus())){
             throw new RuntimeException("이미 닫힌 방입니다.");
         }
-        List<RoomParticipant> roomParticipants = loadActiveRoomParticipantPortOut.loadActiveRoomParticipantsByRoomId(roomId);
-        for(RoomParticipant rp: roomParticipants){
-            rp.leave();
-        }
-        saveRoomParticipantsPortOut.saveRoomParticipants(roomParticipants);
 
-
-        deleteRoomPortOut.deleteById(roomId);
+        roomTerminationProcessor.terminate(room);
     }
 }

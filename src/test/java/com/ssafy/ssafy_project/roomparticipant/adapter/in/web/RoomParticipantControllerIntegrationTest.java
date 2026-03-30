@@ -149,4 +149,53 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
                 .hasRootCauseInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Request processing failed");
     }
+
+    @Test
+    void leaveRoom_ends_room_when_host_leaves() throws Exception {
+        UserJpaEntity owner = saveUser("host-leave-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("host-leave-participant@test.com", "password123!", "participant", "Participant");
+
+        String responseBody = mockMvc.perform(post("/api/rooms")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Host Leave Room"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long roomId = objectMapper.readTree(responseBody).get("roomId").asLong();
+        RoomJpaEntity room = roomJpaRepository.findById(roomId).orElseThrow();
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/room-participants/rooms/{roomId}/me", roomId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
+                .andExpect(status().isNoContent());
+
+        RoomJpaEntity endedRoom = roomJpaRepository.findById(roomId).orElseThrow();
+        RoomParticipantJpaEntity ownerParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(roomId, owner.getId())
+                .orElseThrow();
+        RoomParticipantJpaEntity joinedParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(roomId, participant.getId())
+                .orElseThrow();
+
+        assertThat(endedRoom.getStatus()).isEqualTo("ENDED");
+        assertThat(endedRoom.getEndedTime()).isNotNull();
+        assertThat(ownerParticipant.isActive()).isFalse();
+        assertThat(joinedParticipant.isActive()).isFalse();
+    }
 }
