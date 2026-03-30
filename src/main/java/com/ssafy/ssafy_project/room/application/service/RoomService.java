@@ -6,7 +6,7 @@ import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
@@ -29,7 +29,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
     private final LoadRoomPortOut loadRoomPortOut;
     private final LoadUserPortOut loadUserPortOut;
     private final DeleteRoomPortOut deleteRoomPortOut;
-    private final CreateRoomParticipantPortOut createRoomParticipantPortOut;
+    private final SaveRoomParticipantPortOut saveRoomParticipantPortOut;
     private final LoadActiveRoomParticipantPortOut loadActiveRoomParticipantPortOut;
     private final SaveRoomParticipantsPortOut saveRoomParticipantsPortOut;
 
@@ -40,7 +40,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         Room savedRoom = saveRoomPortOut.saveRoom(room);
         User host = loadUserPortOut.loadById(savedRoom.getHostId());
         RoomParticipant roomParticipant = new RoomParticipant(savedRoom, host, RoomParticipantRole.OWNER);
-        createRoomParticipantPortOut.createParticipant(roomParticipant);
+        saveRoomParticipantPortOut.saveRoomParticipant(roomParticipant);
         return new CreateRoomResult(
                 savedRoom.getId(),
                 savedRoom.getTitle(),

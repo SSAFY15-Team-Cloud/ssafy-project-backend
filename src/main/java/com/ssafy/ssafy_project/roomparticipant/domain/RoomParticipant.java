@@ -42,7 +42,11 @@ public class RoomParticipant {
     }
 
     public void leave(){
-        durationTime += Duration.between(joinedTime, LocalDateTime.now()).toMillis();
-        isActive = false;
+        if(isActive) {
+            durationTime += Duration.between(joinedTime, LocalDateTime.now()).toMillis();
+            isActive = false;
+        }else{
+            throw new RuntimeException("이미 퇴장한 유저입니다.");
+        }
     }
 }

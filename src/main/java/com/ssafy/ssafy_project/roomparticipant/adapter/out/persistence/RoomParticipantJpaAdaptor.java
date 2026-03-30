@@ -4,10 +4,7 @@ import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.*;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
@@ -21,7 +18,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class RoomParticipantJpaAdaptor implements CreateRoomParticipantPortOut, FindRoomParticipantPortOut,
+public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
         LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
@@ -29,7 +26,7 @@ public class RoomParticipantJpaAdaptor implements CreateRoomParticipantPortOut, 
 
 
     @Override
-    public void createParticipant(RoomParticipant roomParticipant) {
+    public void saveRoomParticipant(RoomParticipant roomParticipant) {
         RoomParticipantJpaEntity roomParticipantJpaEntity= null;
         if(roomParticipant.getId() == null){
             RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomParticipant.getRoom().getId())
@@ -112,5 +109,21 @@ public class RoomParticipantJpaAdaptor implements CreateRoomParticipantPortOut, 
             roomParticipantJpaEntity.updateFrom(rp);
             roomParticipantJpaRepository.save(roomParticipantJpaEntity);
         }
+    }
+
+    @Override
+    public Optional<RoomParticipant> findByRoomAndUserAndIsActiveTrue(Room room, User user) {
+        return roomParticipantJpaRepository.findByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(room.getId(), user.getId())
+                .map(r ->
+                        new RoomParticipant(
+                                r.getId(),
+                                room,
+                                user,
+                                r.getRole(),
+                                r.getJoinedTime(),
+                                r.getDurationTime(),
+                                r.getCreatedTime(),
+                                r.isActive()
+                        ));
     }
 }

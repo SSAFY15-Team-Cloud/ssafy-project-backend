@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface FindRoomParticipantPortOut {
     Optional<RoomParticipant> findByRoomAndUser(Room room, User user);
+
+    Optional<RoomParticipant> findByRoomAndUserAndIsActiveTrue(Room room, User user);
 }

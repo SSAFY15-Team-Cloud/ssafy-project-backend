@@ -1,6 +1,8 @@
 package com.ssafy.ssafy_project.room.adapter.in.web;
 
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
+import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
+import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,12 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
         assertThat(savedRoom.getTitle()).isEqualTo("Morning Study");
         assertThat(savedRoom.getUserJpaEntity().getId()).isEqualTo(owner.getId());
         assertThat(savedRoom.getStatus()).isEqualTo("RUNNING");
+
+        RoomParticipantJpaEntity ownerParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(roomId, owner.getId())
+                .orElseThrow();
+        assertThat(ownerParticipant.getRole()).isEqualTo(RoomParticipantRole.OWNER);
+        assertThat(ownerParticipant.isActive()).isTrue();
     }
 
     @Test
@@ -74,7 +82,33 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
     @Test
     void deleteRoom_marks_room_as_ended_for_owner() throws Exception {
         UserJpaEntity owner = saveUser("delete-owner@test.com", "password123!", "owner", "Owner");
-        RoomJpaEntity room = saveRoom("Delete Me", owner);
+        UserJpaEntity participant = saveUser("delete-participant@test.com", "password123!", "participant", "Participant");
+
+        String responseBody = mockMvc.perform(post("/api/rooms")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Delete Me"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long roomId = objectMapper.readTree(responseBody).get("roomId").asLong();
+        RoomJpaEntity room = roomJpaRepository.findById(roomId).orElseThrow();
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(delete("/api/rooms/{roomId}", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
@@ -83,6 +117,16 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
         RoomJpaEntity deletedRoom = roomJpaRepository.findById(room.getId()).orElseThrow();
         assertThat(deletedRoom.getStatus()).isEqualTo("ENDED");
         assertThat(deletedRoom.getEndedTime()).isNotNull();
+
+        RoomParticipantJpaEntity ownerParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), owner.getId())
+                .orElseThrow();
+        RoomParticipantJpaEntity joinedParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), participant.getId())
+                .orElseThrow();
+
+        assertThat(ownerParticipant.isActive()).isFalse();
+        assertThat(joinedParticipant.isActive()).isFalse();
     }
 
     @Test

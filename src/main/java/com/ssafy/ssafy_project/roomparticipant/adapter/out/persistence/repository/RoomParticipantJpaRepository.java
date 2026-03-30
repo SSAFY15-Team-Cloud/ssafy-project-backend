@@ -14,4 +14,6 @@ public interface RoomParticipantJpaRepository extends JpaRepository<RoomParticip
     Optional<RoomParticipantJpaEntity> findById(Long roomParticipantId);
 
     List<RoomParticipantJpaEntity> findAllByRoomJpaEntity_IdAndIsActiveTrue(Long roomId);
+
+    Optional<RoomParticipantJpaEntity> findByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(Long id, Long id1);
 }

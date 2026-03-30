@@ -4,12 +4,15 @@ import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,7 +24,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void createParticipant_creates_new_participant_for_room() throws Exception {
+    void saveRoomParticipant_creates_new_participant_for_room() throws Exception {
         UserJpaEntity owner = saveUser("owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("participant@test.com", "password123!", "participant", "Participant");
         RoomJpaEntity room = saveRoom("Room A", owner);
@@ -47,7 +50,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void createParticipant_rejoins_existing_participant_without_creating_duplicate() throws Exception {
+    void saveRoomParticipant_rejoins_existing_participant_without_creating_duplicate() throws Exception {
         UserJpaEntity owner = saveUser("owner2@test.com", "password123!", "owner2", "Owner2");
         UserJpaEntity participant = saveUser("participant2@test.com", "password123!", "participant2", "Participant2");
         RoomJpaEntity room = saveRoom("Room B", owner);
@@ -89,7 +92,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void createParticipant_requires_authentication() throws Exception {
+    void saveRoomParticipant_requires_authentication() throws Exception {
         mockMvc.perform(post("/api/room-participants")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -98,5 +101,52 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
                                 }
                                 """))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void leaveRoom_deactivates_active_participant() throws Exception {
+        UserJpaEntity owner = saveUser("leave-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("leave-participant@test.com", "password123!", "participant", "Participant");
+        RoomJpaEntity room = saveRoom("Leave Room", owner);
+
+        mockMvc.perform(post("/api/room-participants")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "roomCode": "%s"
+                                }
+                                """.formatted(room.getRoomCode())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/room-participants/rooms/{roomId}/me", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isNoContent());
+
+        RoomParticipantJpaEntity savedParticipant = roomParticipantJpaRepository
+                .findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), participant.getId())
+                .orElseThrow();
+
+        assertThat(savedParticipant.isActive()).isFalse();
+        assertThat(savedParticipant.getDurationTime()).isGreaterThanOrEqualTo(0L);
+    }
+
+    @Test
+    void leaveRoom_requires_authentication() throws Exception {
+        mockMvc.perform(delete("/api/room-participants/rooms/{roomId}/me", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void leaveRoom_fails_for_non_participant() throws Exception {
+        UserJpaEntity owner = saveUser("non-participant-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity outsider = saveUser("outsider@test.com", "password123!", "outsider", "Outsider");
+        RoomJpaEntity room = saveRoom("Non Participant Room", owner);
+
+        assertThatThrownBy(() -> mockMvc.perform(delete("/api/room-participants/rooms/{roomId}/me", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
     }
 }
