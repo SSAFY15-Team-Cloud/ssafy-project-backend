@@ -6,6 +6,11 @@ import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
+import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
+import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
+import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +23,18 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
     private final SaveRoomPortOut saveRoomPortOut;
     private final UpdateRoomPortOut updateRoomPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
+    private final LoadUserPortOut loadUserPortOut;
     private final DeleteRoomPortOut deleteRoomPortOut;
+    private final CreateRoomParticipantPortOut createRoomParticipantPortOut;
 
     @Transactional
     @Override
     public CreateRoomResult createRoom(CreateRoomCommand createRoomCommand) {
         Room room = new Room(createRoomCommand.title(), createRoomCommand.hostId());
         Room savedRoom = saveRoomPortOut.saveRoom(room);
+        User host = loadUserPortOut.loadById(savedRoom.getHostId());
+        RoomParticipant roomParticipant = new RoomParticipant(savedRoom, host, RoomParticipantRole.OWNER);
+        createRoomParticipantPortOut.createParticipant(roomParticipant);
         return new CreateRoomResult(
                 savedRoom.getId(),
                 savedRoom.getTitle(),

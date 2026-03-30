@@ -5,7 +5,7 @@ import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRe
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.RoomParticipantCreatePortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class RoomParticipantJpaAdaptor implements RoomParticipantCreatePortOut, FindRoomParticipantPortOut {
+public class JpaAdaptorRoomParticipant implements CreateRoomParticipantPortOut, FindRoomParticipantPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final RoomJpaRepository roomJpaRepository;

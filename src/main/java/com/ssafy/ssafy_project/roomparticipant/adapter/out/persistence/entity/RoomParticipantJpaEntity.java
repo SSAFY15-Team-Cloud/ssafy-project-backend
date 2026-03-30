@@ -3,6 +3,7 @@ package com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
+import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -33,8 +34,9 @@ public class RoomParticipantJpaEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity userJpaEntity;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private String role = "PARTICIPANT";
+    private RoomParticipantRole role;
 
     @Column(name = "joined_time", nullable = false)
     private LocalDateTime joinedTime;

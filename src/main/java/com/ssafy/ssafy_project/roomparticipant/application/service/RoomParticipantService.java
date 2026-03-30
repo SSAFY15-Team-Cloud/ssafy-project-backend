@@ -5,8 +5,9 @@ import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.RoomParticipantCreateCommand;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.RoomParticipantCreatePortIn;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.RoomParticipantCreatePortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
+import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RoomParticipantService implements RoomParticipantCreatePortIn {
-    private final RoomParticipantCreatePortOut roomParticipantCreatePortOut;
+    private final CreateRoomParticipantPortOut createRoomParticipantPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
     private final LoadUserPortOut loadUserPortOut;
     private final FindRoomParticipantPortOut findRoomParticipantPortOut;
@@ -38,12 +39,12 @@ public class RoomParticipantService implements RoomParticipantCreatePortIn {
         if(found.isPresent()){
             RoomParticipant roomParticipant = found.get();
             roomParticipant.join();
-            roomParticipantCreatePortOut.createParticipant(roomParticipant);
+            createRoomParticipantPortOut.createParticipant(roomParticipant);
         }
 
         if(found.isEmpty()){
-            RoomParticipant roomParticipant = new RoomParticipant(room, user);
-            roomParticipantCreatePortOut.createParticipant(roomParticipant);
+            RoomParticipant roomParticipant = new RoomParticipant(room, user, RoomParticipantRole.PARTICIPANT);
+            createRoomParticipantPortOut.createParticipant(roomParticipant);
         }
     }
 }

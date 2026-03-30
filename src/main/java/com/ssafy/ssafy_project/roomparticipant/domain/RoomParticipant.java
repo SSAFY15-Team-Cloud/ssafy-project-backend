@@ -16,7 +16,7 @@ public class RoomParticipant {
 
     private User user;
 
-    private String role;
+    private RoomParticipantRole role;
 
     private LocalDateTime joinedTime;
 
@@ -26,10 +26,10 @@ public class RoomParticipant {
 
     private boolean isActive;
 
-    public RoomParticipant(Room room, User user){
+    public RoomParticipant(Room room, User user, RoomParticipantRole role){
         this.room = room;
         this.user = user;
-        this.role = "PARTICIPANT";
+        this.role = role;
         this.joinedTime = LocalDateTime.now();
         this.durationTime = 0L;
         this.isActive = true;
