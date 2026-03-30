@@ -24,7 +24,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void saveRoomParticipant_creates_new_participant_for_room() throws Exception {
+    void joinRoomParticipant_creates_new_participant_for_room() throws Exception {
         UserJpaEntity owner = saveUser("owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("participant@test.com", "password123!", "participant", "Participant");
         RoomJpaEntity room = saveRoom("Room A", owner);
@@ -50,7 +50,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void saveRoomParticipant_rejoins_existing_participant_without_creating_duplicate() throws Exception {
+    void joinRoomParticipant_rejoins_existing__without_creating_duplicate() throws Exception {
         UserJpaEntity owner = saveUser("owner2@test.com", "password123!", "owner2", "Owner2");
         UserJpaEntity participant = saveUser("participant2@test.com", "password123!", "participant2", "Participant2");
         RoomJpaEntity room = saveRoom("Room B", owner);
@@ -92,7 +92,7 @@ class RoomParticipantControllerIntegrationTest extends ControllerIntegrationTest
     }
 
     @Test
-    void saveRoomParticipant_requires_authentication() throws Exception {
+    void joinRoom_requires_authentication() throws Exception {
         mockMvc.perform(post("/api/room-participants")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

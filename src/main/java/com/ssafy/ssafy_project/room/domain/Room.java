@@ -9,11 +9,11 @@ public class Room {
     private String title;
     private Long hostId;
     private String roomCode;
-    private String status;
+    private RoomStatus status;
     private LocalDateTime endedTime;
     private LocalDateTime createdAt;
 
-    public Room(Long id, String title, Long hostId, String roomCode, String status, LocalDateTime endedTime, LocalDateTime createdAt){
+    public Room(Long id, String title, Long hostId, String roomCode, RoomStatus status, LocalDateTime endedTime, LocalDateTime createdAt){
         this.id = id;
         this.title = title;
         this.hostId = hostId;

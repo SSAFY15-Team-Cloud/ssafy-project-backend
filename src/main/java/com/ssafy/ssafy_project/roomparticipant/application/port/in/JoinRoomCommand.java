@@ -1,6 +1,6 @@
 package com.ssafy.ssafy_project.roomparticipant.application.port.in;
 
-public record SaveRoomParticipantCommand(
+public record JoinRoomCommand(
         String roomCode,
         Long userId
 ) {

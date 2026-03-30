@@ -1,5 +1,6 @@
 package com.ssafy.ssafy_project.room.adapter.out.persistence.entity;
 
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -30,8 +31,9 @@ public class RoomJpaEntity {
     @Column(name = "room_code", unique = true, nullable = false)
     private String roomCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private RoomStatus status;
 
     @Column(name = "ended_time")
     private LocalDateTime endedTime;
@@ -43,12 +45,12 @@ public class RoomJpaEntity {
     public RoomJpaEntity(String title, UserJpaEntity userJpaEntity){
         this.title = title;
         this.userJpaEntity = userJpaEntity;
-        this.status = "RUNNING";
+        this.status = RoomStatus.RUNNING;
         this.roomCode = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     public void endRoom() {
-        this.status = "ENDED";
+        this.status = RoomStatus.ENDED;
         this.endedTime = LocalDateTime.now();
     }
 
