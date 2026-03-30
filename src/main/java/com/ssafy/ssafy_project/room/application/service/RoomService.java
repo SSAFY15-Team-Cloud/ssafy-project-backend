@@ -6,6 +6,7 @@ import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
@@ -59,7 +60,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
             throw new RuntimeException("방 생성자만 수정할 수 있습니다.");
         }
 
-        if(!"RUNNING".equals(room.getStatus())){
+        if(!RoomStatus.RUNNING.equals(room.getStatus())){
             throw new RuntimeException("닫힌 방은 수정할 수 없습니다.");
         }
 
@@ -80,7 +81,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         if(!room.getHostId().equals(userId)){
             throw new RuntimeException("작성자만 방을 삭제할 수 있습니다.");
         }
-        if(!"RUNNING".equals(room.getStatus())){
+        if(!RoomStatus.RUNNING.equals(room.getStatus())){
             throw new RuntimeException("이미 닫힌 방입니다.");
         }
 
