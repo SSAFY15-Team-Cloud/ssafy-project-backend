@@ -6,6 +6,8 @@ import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
@@ -14,16 +16,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.repository.RoomParticipantJpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class JpaAdaptorRoomParticipant implements CreateRoomParticipantPortOut, FindRoomParticipantPortOut {
+public class RoomParticipantJpaAdaptor implements CreateRoomParticipantPortOut, FindRoomParticipantPortOut,
+        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final RoomJpaRepository roomJpaRepository;
-    
-    
+
+
     @Override
     public void createParticipant(RoomParticipant roomParticipant) {
         RoomParticipantJpaEntity roomParticipantJpaEntity= null;
@@ -58,5 +62,55 @@ public class JpaAdaptorRoomParticipant implements CreateRoomParticipantPortOut, 
                         r.getCreatedTime(),
                         r.isActive()
                 ));
+    }
+
+    @Override
+    public List<RoomParticipant> loadActiveRoomParticipantsByRoomId(Long roomId) {
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+        Room room = new Room(
+                roomJpaEntity.getId(),
+                roomJpaEntity.getTitle(),
+                roomJpaEntity.getUserJpaEntity().getId(),
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getStatus(),
+                roomJpaEntity.getEndedTime(),
+                roomJpaEntity.getCreatedTime()
+        );
+        return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
+                .stream()
+                .map(r->{
+                    User user = new User(
+                            r.getUserJpaEntity().getId(),
+                            r.getUserJpaEntity().getEmail(),
+                            r.getUserJpaEntity().getPassword(),
+                            r.getUserJpaEntity().getRole(),
+                            r.getUserJpaEntity().getNickname(),
+                            r.getUserJpaEntity().getName(),
+                            r.getUserJpaEntity().getProfileImageUrl(),
+                            r.getUserJpaEntity().isDeleted()
+                    );
+                    return new RoomParticipant(
+                        r.getId(),
+                        room,
+                        user,
+                        r.getRole(),
+                        r.getJoinedTime(),
+                        r.getDurationTime(),
+                        r.getCreatedTime(),
+                        r.isActive()
+                );
+                })
+                .toList();
+    }
+
+    @Override
+    public void saveRoomParticipants(List<RoomParticipant> roomParticipants) {
+        for(RoomParticipant rp : roomParticipants){
+            RoomParticipantJpaEntity roomParticipantJpaEntity = roomParticipantJpaRepository.findById(rp.getId())
+                    .orElseThrow(()-> new RuntimeException("방 참가자를 찾을 수 없습니다."));
+            roomParticipantJpaEntity.updateFrom(rp);
+            roomParticipantJpaRepository.save(roomParticipantJpaEntity);
+        }
     }
 }

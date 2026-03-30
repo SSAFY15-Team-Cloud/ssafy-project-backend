@@ -7,6 +7,8 @@ import com.ssafy.ssafy_project.room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.CreateRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
@@ -14,6 +16,8 @@ import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,8 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
     private final LoadUserPortOut loadUserPortOut;
     private final DeleteRoomPortOut deleteRoomPortOut;
     private final CreateRoomParticipantPortOut createRoomParticipantPortOut;
+    private final LoadActiveRoomParticipantPortOut loadActiveRoomParticipantPortOut;
+    private final SaveRoomParticipantsPortOut saveRoomParticipantsPortOut;
 
     @Transactional
     @Override
@@ -79,6 +85,12 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         if(!"RUNNING".equals(room.getStatus())){
             throw new RuntimeException("이미 닫힌 방입니다.");
         }
+        List<RoomParticipant> roomParticipants = loadActiveRoomParticipantPortOut.loadActiveRoomParticipantsByRoomId(roomId);
+        for(RoomParticipant rp: roomParticipants){
+            rp.leave();
+        }
+        saveRoomParticipantsPortOut.saveRoomParticipants(roomParticipants);
+
 
         deleteRoomPortOut.deleteById(roomId);
     }

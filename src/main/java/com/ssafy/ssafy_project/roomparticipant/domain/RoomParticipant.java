@@ -5,6 +5,7 @@ import com.ssafy.ssafy_project.user.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Getter
@@ -38,5 +39,10 @@ public class RoomParticipant {
     public void join(){
         this.isActive = true;
         this.joinedTime = LocalDateTime.now();
+    }
+
+    public void leave(){
+        durationTime += Duration.between(joinedTime, LocalDateTime.now()).toMillis();
+        isActive = false;
     }
 }
