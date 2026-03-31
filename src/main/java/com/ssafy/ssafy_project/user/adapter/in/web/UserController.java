@@ -4,6 +4,7 @@ import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.ChangePasswordReq
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.UpdateNicknameRequest;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.MyInfoResponse;
 import com.ssafy.ssafy_project.user.application.port.in.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,7 +33,7 @@ public class UserController {
     }
 
     @PatchMapping("/me/nickname")
-    public ResponseEntity<Void> updateUserNickname(@AuthenticationPrincipal Long userId, @RequestBody UpdateNicknameRequest request) {
+    public ResponseEntity<Void> updateUserNickname(@AuthenticationPrincipal Long userId, @Valid @RequestBody UpdateNicknameRequest request) {
         updateNicknamePortIn.updateNickname(
                 new UpdateNicknameCommand(userId, request.nickname())
         );
@@ -42,7 +43,7 @@ public class UserController {
     }
 
     @PatchMapping("/me/password")
-    public ResponseEntity<Void> changeUserPassword(@AuthenticationPrincipal Long userId, @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<Void> changeUserPassword(@AuthenticationPrincipal Long userId, @Valid @RequestBody ChangePasswordRequest request) {
         changePasswordPortIn.changePassword(
                 new ChangePasswordCommand(userId, request.currentPassword(), request.newPassword())
         );

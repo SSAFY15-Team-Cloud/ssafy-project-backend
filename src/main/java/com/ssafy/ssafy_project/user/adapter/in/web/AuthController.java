@@ -7,6 +7,7 @@ import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.SignUpRequest;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.AuthTokenResponse;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthTokenResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthTokenResponse> login(@Valid @RequestBody LoginRequest request) {
         Tokens tokens = loginPortIn.login(request.email(), request.password());
 
         ResponseCookie refreshTokenCookie = cookieProvider.createRefreshTokenCookie(
@@ -48,7 +49,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Long> signup(@RequestBody SignUpRequest request) {
+    public ResponseEntity<Long> signup(@Valid @RequestBody SignUpRequest request) {
         Long response = signUpPortIn.signUp(
                 new SignUpCommand(
                         request.email(),
