@@ -4,13 +4,14 @@ import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.RegisterUserPortOut;
+import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
+public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, UpdateUserPortOut {
 
     private final UserJpaRepository userJpaRepository;
 
@@ -61,5 +62,21 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
                 userJpaEntity.getProfileImageUrl(),
                 userJpaEntity.isDeleted()
         );
+    }
+
+    @Override
+    public void updateNickname(Long userId, String nickname) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.updateNickname(nickname);
+    }
+
+    @Override
+    public void changePassword(Long userId, String password) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.changePassword(password);
     }
 }

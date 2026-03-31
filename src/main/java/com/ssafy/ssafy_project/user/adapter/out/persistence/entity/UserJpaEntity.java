@@ -67,10 +67,12 @@ public class UserJpaEntity {
         this.deleted = false;
     }
 
-    public void updateProfile(String nickname, String name, String profileImageUrl) {
+    public void updateNickname(String nickname) {
         this.nickname = nickname;
-        this.name = name;
-        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
     }
 
     public void changeRole(UserRole role) {
