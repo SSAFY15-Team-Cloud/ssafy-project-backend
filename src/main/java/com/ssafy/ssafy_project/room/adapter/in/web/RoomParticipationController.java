@@ -25,14 +25,16 @@ public class RoomParticipationController {
         return ResponseEntity.ok(joinRoomResult);
     }
 
-    @PostMapping("/{roomCode}/leave")
+    @PostMapping("/{roomId}/leave")
     public ResponseEntity<Void> leaveRoom(
-            @PathVariable String roomCode,
+            @PathVariable Long roomId,
             @AuthenticationPrincipal Long userId
     ){
-        LeaveRoomCommand leaveRoomCommand = new LeaveRoomCommand(roomCode, userId);
+        LeaveRoomCommand leaveRoomCommand = new LeaveRoomCommand(roomId, userId);
         leaveRoomPortIn.leaveRoom(leaveRoomCommand);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+    @GetMapping("/{roomCode}/")
 
 }

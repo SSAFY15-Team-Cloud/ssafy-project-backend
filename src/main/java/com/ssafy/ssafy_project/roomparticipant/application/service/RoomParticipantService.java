@@ -57,8 +57,8 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
     @Transactional
     @Override
     public void leaveRoom(LeaveRoomCommand leaveRoomCommand) {
-        String roomCode = leaveRoomCommand.roomCode();
-        Room room = loadRoomPortOut.loadByRoomCode(roomCode);
+        Long roomId = leaveRoomCommand.roomId();
+        Room room = loadRoomPortOut.loadById(roomId);
 
         Long userId = leaveRoomCommand.userId();
         User user = loadUserPortOut.loadById(userId);

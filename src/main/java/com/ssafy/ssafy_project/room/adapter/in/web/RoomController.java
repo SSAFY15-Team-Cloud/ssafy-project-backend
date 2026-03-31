@@ -58,4 +58,6 @@ public class RoomController {
         deleteRoomPortIn.deleteRoom(deleteRoomCommand);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
+
 }
