@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.room.adapter.in.web;
 
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
@@ -49,7 +50,7 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
 
         assertThat(savedRoom.getTitle()).isEqualTo("Morning Study");
         assertThat(savedRoom.getUserJpaEntity().getId()).isEqualTo(owner.getId());
-        assertThat(savedRoom.getStatus()).isEqualTo("RUNNING");
+        assertThat(savedRoom.getStatus()).isEqualTo(RoomStatus.RUNNING);
 
         RoomParticipantJpaEntity ownerParticipant = roomParticipantJpaRepository
                 .findByRoomJpaEntity_IdAndUserJpaEntity_Id(roomId, owner.getId())
@@ -100,22 +101,16 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
         Long roomId = objectMapper.readTree(responseBody).get("roomId").asLong();
         RoomJpaEntity room = roomJpaRepository.findById(roomId).orElseThrow();
 
-        mockMvc.perform(post("/api/room-participants")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "roomCode": "%s"
-                                }
-                                """.formatted(room.getRoomCode())))
-                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isOk());
 
         mockMvc.perform(delete("/api/rooms/{roomId}", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
                 .andExpect(status().isNoContent());
 
         RoomJpaEntity deletedRoom = roomJpaRepository.findById(room.getId()).orElseThrow();
-        assertThat(deletedRoom.getStatus()).isEqualTo("ENDED");
+        assertThat(deletedRoom.getStatus()).isEqualTo(RoomStatus.ENDED);
         assertThat(deletedRoom.getEndedTime()).isNotNull();
 
         RoomParticipantJpaEntity ownerParticipant = roomParticipantJpaRepository
