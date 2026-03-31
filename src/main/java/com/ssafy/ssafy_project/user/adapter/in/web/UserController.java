@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.user.adapter.in.web;
 
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.MyInfoResponse;
+import com.ssafy.ssafy_project.user.application.port.in.GetMyInfoCommand;
 import com.ssafy.ssafy_project.user.application.port.in.GetMyInfoPortIn;
 import com.ssafy.ssafy_project.user.application.port.in.MyInfoResult;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<MyInfoResponse> getMyInfo(@AuthenticationPrincipal Long userId) {
-        MyInfoResult result = getMyInfoPortIn.getMyInfo(userId);
+        MyInfoResult result = getMyInfoPortIn.getMyInfo(new GetMyInfoCommand(userId));
         MyInfoResponse response = new MyInfoResponse(
                 result.userId(),
                 result.email(),
