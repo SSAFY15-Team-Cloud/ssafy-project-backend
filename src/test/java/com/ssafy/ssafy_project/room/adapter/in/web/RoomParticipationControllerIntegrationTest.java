@@ -92,7 +92,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
@@ -106,7 +106,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
 
     @Test
     void leaveRoom_requires_authentication() throws Exception {
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", "ABCDEFGH"))
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", 1L))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -116,7 +116,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
         UserJpaEntity outsider = saveUser("outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Non Participant Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
                 .isInstanceOf(ServletException.class)
                 .hasRootCauseInstanceOf(RuntimeException.class)
@@ -148,7 +148,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
                 .andExpect(status().isOk());
 

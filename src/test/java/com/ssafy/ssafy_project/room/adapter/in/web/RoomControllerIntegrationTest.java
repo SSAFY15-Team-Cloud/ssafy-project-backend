@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -122,6 +123,21 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
 
         assertThat(ownerParticipant.isActive()).isFalse();
         assertThat(joinedParticipant.isActive()).isFalse();
+    }
+
+    @Test
+    void getRoom_returns_room_info_by_room_code() throws Exception {
+        UserJpaEntity owner = saveUser("get-room-owner@test.com", "password123!", "owner", "Owner");
+        RoomJpaEntity room = saveRoom("Room Info", owner);
+
+        mockMvc.perform(get("/api/rooms/{roomCode}", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomId").value(room.getId()))
+                .andExpect(jsonPath("$.title").value("Room Info"))
+                .andExpect(jsonPath("$.status").value(RoomStatus.RUNNING.name()))
+                .andExpect(jsonPath("$.hostId").value(owner.getId()))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty());
     }
 
     @Test
