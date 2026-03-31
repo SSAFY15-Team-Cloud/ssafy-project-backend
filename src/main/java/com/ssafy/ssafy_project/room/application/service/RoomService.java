@@ -94,6 +94,10 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
     public GetRoomResult getRoom(GetRoomCommand getRoomCommand) {
         String roomCode = getRoomCommand.roomCode();
         Room room = loadRoomPortOut.loadByRoomCode(roomCode);
+        if(room.getStatus().equals(RoomStatus.ENDED)){
+            throw new RuntimeException("종료된 방입니다.");
+        }
+
         return new GetRoomResult(
                 room.getId(),
                 room.getTitle(),

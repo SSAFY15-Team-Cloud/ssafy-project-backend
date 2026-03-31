@@ -3,6 +3,7 @@ package com.ssafy.ssafy_project.roomparticipant.application.service;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.service.RoomTerminationProcessor;
 import com.ssafy.ssafy_project.room.domain.Room;
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.GetParticipantsResult;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.*;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
@@ -36,6 +37,11 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
     public JoinRoomResult saveRoomParticipant(JoinRoomCommand joinRoomCommand) {
         String roomCode = joinRoomCommand.roomCode();
         Room room = loadRoomPortOut.loadByRoomCode(roomCode);
+
+        if(room.getStatus().equals(RoomStatus.ENDED)){
+            throw new RuntimeException("이미 종료된 방입니다.");
+        }
+
 
         Long userId = joinRoomCommand.userId();
         User user = loadUserPortOut.loadById(userId);
