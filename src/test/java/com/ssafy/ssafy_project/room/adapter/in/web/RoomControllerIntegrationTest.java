@@ -6,12 +6,14 @@ import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.Ro
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -138,6 +140,20 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
                 .andExpect(jsonPath("$.status").value(RoomStatus.RUNNING.name()))
                 .andExpect(jsonPath("$.hostId").value(owner.getId()))
                 .andExpect(jsonPath("$.createdAt").isNotEmpty());
+    }
+
+    @Test
+    void getRoom_throws_exception_when_room_is_ended() {
+        UserJpaEntity owner = saveUser("get-ended-room-owner@test.com", "password123!", "owner", "Owner");
+        RoomJpaEntity room = saveRoom("Ended Room", owner);
+        room.endRoom();
+        roomJpaRepository.save(room);
+
+        assertThatThrownBy(() -> mockMvc.perform(get("/api/rooms/{roomCode}", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
     }
 
     @Test

@@ -84,6 +84,21 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
     }
 
     @Test
+    void joinRoom_throws_exception_when_room_is_ended() {
+        UserJpaEntity owner = saveUser("ended-join-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("ended-join-participant@test.com", "password123!", "participant", "Participant");
+        RoomJpaEntity room = saveRoom("Ended Join Room", owner);
+        room.endRoom();
+        roomJpaRepository.save(room);
+
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
+    }
+
+    @Test
     void leaveRoom_deactivates_active_participant() throws Exception {
         UserJpaEntity owner = saveUser("leave-owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("leave-participant@test.com", "password123!", "participant", "Participant");
