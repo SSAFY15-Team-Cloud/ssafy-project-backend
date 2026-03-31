@@ -60,47 +60,6 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
                 .orElseThrow(()-> new RuntimeException("유저를 찾을 수 없습니다."));
 
-//        public User(String email, String password, String nickname, String name, UserRole role, String profileImageUrl) {
-//        this.id = null;
-//        this.email = email;
-//        this.password = password;
-//        this.nickname = nickname;
-//        this.name = name;
-//        this.role = role;
-//        this.profileImageUrl = profileImageUrl;
-//    }
-
-//    private Long id;
-//
-//    @Column(name = "email", nullable = false, unique = true)
-//    private String email;
-//
-//    @Column(name = "password", nullable = false)
-//    private String password;
-//
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "role", nullable = false)
-//    private UserRole role;
-//
-//    @Column(name = "nickname")
-//    private String nickname;
-//
-//    @Column(name = "name", nullable = false)
-//    private String name;
-//
-//    @Column(name = "profile_image_url")
-//    private String profileImageUrl;
-//
-//    @Column(name = "is_deleted", nullable = false)
-//    private boolean deleted;
-//
-//    @CreationTimestamp
-//    @Column(name = "created_time", nullable = false, updatable = false)
-//    private LocalDateTime createdTime;
-//
-//    @UpdateTimestamp
-//    @Column(name = "updated_time", nullable = false)
-//    private LocalDateTime updatedTime;
         return new User(
                 userJpaEntity.getId(),
                 userJpaEntity.getEmail(),
