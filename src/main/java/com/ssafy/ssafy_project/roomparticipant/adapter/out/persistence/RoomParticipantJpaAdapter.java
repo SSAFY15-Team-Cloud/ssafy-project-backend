@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
+public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
         LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;

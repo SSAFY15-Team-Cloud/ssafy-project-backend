@@ -35,6 +35,7 @@ public class RoomParticipationController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @GetMapping("/{roomCode}/")
+
+
 
 }

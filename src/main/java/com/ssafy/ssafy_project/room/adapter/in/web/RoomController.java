@@ -3,6 +3,7 @@ package com.ssafy.ssafy_project.room.adapter.in.web;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.request.CreateRoomRequest;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.request.UpdateRoomRequest;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.CreateRoomResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetRoomResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.UpdateRoomResponse;
 import com.ssafy.ssafy_project.room.application.port.in.*;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class RoomController {
     private final CreateRoomPortIn createRoomPortIn;
     private final UpdateRoomPortIn updateRoomPortIn;
     private final DeleteRoomPortIn deleteRoomPortIn;
+    private final GetRoomPortIn getRoomPortIn;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -59,5 +61,22 @@ public class RoomController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @GetMapping("/{roomCode}")
+    public ResponseEntity<GetRoomResponse> getRoom(
+            @PathVariable String roomCode
+    ){
+        GetRoomCommand getRoomCommand = new GetRoomCommand(roomCode);
+        GetRoomResult getRoomResult = getRoomPortIn.getRoom(getRoomCommand);
+
+        GetRoomResponse getRoomResponse = new GetRoomResponse(
+                getRoomResult.roomId(),
+                getRoomResult.title(),
+                getRoomResult.status(),
+                getRoomResult.hostId(),
+                getRoomResult.createdTime()
+        );
+
+        return ResponseEntity.ok(getRoomResponse);
+    }
 
 }
