@@ -22,6 +22,10 @@ public class UserService implements GetMyInfoPortIn {
     public MyInfoResult getMyInfo(Long userId) {
         User user = loadUserPortOut.loadById(userId);
 
+        if(user.isDeleted()) {
+            throw new RuntimeException("삭제된 유저입니다.");
+        }
+
         return new MyInfoResult(
                 user.getId(),
                 user.getEmail(),

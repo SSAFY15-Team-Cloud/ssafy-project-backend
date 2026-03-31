@@ -5,7 +5,6 @@ import com.ssafy.ssafy_project.user.application.port.in.GetMyInfoPortIn;
 import com.ssafy.ssafy_project.user.application.port.in.MyInfoResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 

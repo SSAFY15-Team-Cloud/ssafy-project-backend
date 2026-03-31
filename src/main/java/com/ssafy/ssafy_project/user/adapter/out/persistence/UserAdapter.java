@@ -42,24 +42,15 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
         return userJpaRepository.existsByEmail(email);
     }
 
-    private User toDomain(UserJpaEntity userJpaEntity) {
-        return new User(
-                userJpaEntity.getId(),
-                userJpaEntity.getEmail(),
-                userJpaEntity.getPassword(),
-                userJpaEntity.getRole(),
-                userJpaEntity.getNickname(),
-                userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
-                userJpaEntity.isDeleted()
-        );
-    }
-
     @Override
     public User loadById(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
+        return toDomain(userJpaEntity);
+    }
+
+    private User toDomain(UserJpaEntity userJpaEntity) {
         return new User(
                 userJpaEntity.getId(),
                 userJpaEntity.getEmail(),
