@@ -19,7 +19,8 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
-        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut {
+        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut,
+        LoadParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final RoomJpaRepository roomJpaRepository;
@@ -125,5 +126,86 @@ public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, Fi
                                 r.getCreatedTime(),
                                 r.isActive()
                         ));
+    }
+
+    @Override
+    public Optional<RoomParticipant> findByRoom_IdAndUser_IdAndIsActiveTrue(Long roomId, Long userId) {
+
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+        Room room = new Room(
+                roomJpaEntity.getId(),
+                roomJpaEntity.getTitle(),
+                roomJpaEntity.getUserJpaEntity().getId(),
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getStatus(),
+                roomJpaEntity.getEndedTime(),
+                roomJpaEntity.getCreatedTime()
+        );
+
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(()-> new RuntimeException("유저를 찾을 수 없습니다."));
+        User user = new User(
+                userJpaEntity.getId(),
+                userJpaEntity.getEmail(),
+                userJpaEntity.getPassword(),
+                userJpaEntity.getRole(),
+                userJpaEntity.getNickname(),
+                userJpaEntity.getName(),
+                userJpaEntity.getProfileImageUrl(),
+                userJpaEntity.isDeleted()
+        );
+        return roomParticipantJpaRepository.findByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(roomId, userId)
+                .map(r -> new RoomParticipant(
+                        r.getId(),
+                        room,
+                        user,
+                        r.getRole(),
+                        r.getJoinedTime(),
+                        r.getDurationTime(),
+                        r.getCreatedTime(),
+                        r.isActive()
+                ));
+    }
+
+    @Override
+    public List<RoomParticipant> loadAllByRoomIdAndIsActiveTrue(Long roomId) {
+        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
+                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+        Room room = new Room(
+                roomJpaEntity.getId(),
+                roomJpaEntity.getTitle(),
+                roomJpaEntity.getUserJpaEntity().getId(),
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getStatus(),
+                roomJpaEntity.getEndedTime(),
+                roomJpaEntity.getCreatedTime()
+        );
+
+        return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
+                .stream()
+                .map(r->{
+                    User user = new User(
+                            r.getUserJpaEntity().getId(),
+                            r.getUserJpaEntity().getEmail(),
+                            r.getUserJpaEntity().getPassword(),
+                            r.getUserJpaEntity().getRole(),
+                            r.getUserJpaEntity().getNickname(),
+                            r.getUserJpaEntity().getName(),
+                            r.getUserJpaEntity().getProfileImageUrl(),
+                            r.getUserJpaEntity().isDeleted()
+                    );
+                    return new RoomParticipant(
+                            r.getId(),
+                            room,
+                            user,
+                            r.getRole(),
+                            r.getJoinedTime(),
+                            r.getDurationTime(),
+                            r.getCreatedTime(),
+                            r.isActive()
+                    );
+                })
+                .toList();
     }
 }
