@@ -18,12 +18,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRoomPortIn {
+public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
+        DeleteRoomPortIn, GetRoomPortIn {
 
     private final SaveRoomPortOut saveRoomPortOut;
     private final UpdateRoomPortOut updateRoomPortOut;
@@ -86,5 +88,22 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         }
 
         roomTerminationProcessor.terminate(room);
+    }
+
+    @Override
+    public GetRoomResult getRoom(GetRoomCommand getRoomCommand) {
+        String roomCode = getRoomCommand.roomCode();
+        Room room = loadRoomPortOut.loadByRoomCode(roomCode);
+        if(room.getStatus().equals(RoomStatus.ENDED)){
+            throw new RuntimeException("종료된 방입니다.");
+        }
+
+        return new GetRoomResult(
+                room.getId(),
+                room.getTitle(),
+                room.getStatus(),
+                room.getHostId(),
+                room.getCreatedAt()
+        );
     }
 }
