@@ -3,6 +3,7 @@ package com.ssafy.ssafy_project.support;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.ssafy_project.global.application.port.out.RefreshTokenPortOut;
 import com.ssafy.ssafy_project.global.infrastructure.security.JwtTokenProvider;
+import com.ssafy.ssafy_project.chat.adapter.out.persistence.repository.ChatMessageJpaRepository;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.repository.RoomParticipantJpaRepository;
@@ -57,9 +58,13 @@ public abstract class ControllerIntegrationTestSupport {
     protected RoomParticipantJpaRepository roomParticipantJpaRepository;
 
     @Autowired
+    protected ChatMessageJpaRepository chatMessageJpaRepository;
+
+    @Autowired
     protected InMemoryRefreshTokenPortOut refreshTokenPortOut;
 
     protected void clearPersistence() {
+        chatMessageJpaRepository.deleteAll();
         roomParticipantJpaRepository.deleteAll();
         roomJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
