@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -37,12 +38,14 @@ public class UserWithdrawalProcessor {
 
     private void leaveOtherActiveParticipants(Long userId) {
         List<RoomParticipant> activeParticipants = loadActiveRoomParticipantPortOut.loadActiveRoomParticipantsByUserId(userId);
+        LocalDateTime now = LocalDateTime.now();
 
         for(RoomParticipant participant : activeParticipants) {
             participant.leave();
+            saveRoomParticipantsPortOut.deactivateActiveParticipantsByRoomId(participant.getId(), now);
         }
 
-        saveRoomParticipantsPortOut.saveRoomParticipants(activeParticipants);
+//        saveRoomParticipantsPortOut.saveRoomParticipants(activeParticipants);
     }
 
 

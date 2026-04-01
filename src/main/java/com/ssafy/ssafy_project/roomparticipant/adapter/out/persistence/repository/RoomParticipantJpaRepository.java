@@ -35,4 +35,7 @@ public interface RoomParticipantJpaRepository extends JpaRepository<RoomParticip
             AND is_active = true
           """, nativeQuery = true)
     void closeActiveParticipantsByRoomId(@Param("roomId") Long roomId, @Param("now") LocalDateTime now);
+
+    List<RoomParticipantJpaEntity> findAllByUserJpaEntity_IdAndIsActiveTrue(Long userId);
+
 }
