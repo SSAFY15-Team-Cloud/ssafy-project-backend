@@ -38,7 +38,7 @@ public class UserJpaEntity {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
     @Column(name = "name", nullable = false)
@@ -67,10 +67,12 @@ public class UserJpaEntity {
         this.deleted = false;
     }
 
-    public void updateProfile(String nickname, String name, String profileImageUrl) {
+    public void updateNickname(String nickname) {
         this.nickname = nickname;
-        this.name = name;
-        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
     }
 
     public void changeRole(UserRole role) {
