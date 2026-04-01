@@ -1,7 +1,6 @@
 package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
-import com.ssafy.ssafy_project.global.domain.entity.Tokens;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
@@ -14,9 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn {
+public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
+    private final JwtPortOut jwtPortOut;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -33,6 +33,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     }
 
     @Override
+    @Transactional
     public void changePassword(ChangePasswordCommand command) {
         User user = getActiveUser(command.userId());
 
@@ -50,6 +51,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     }
 
     @Override
+    @Transactional
     public void updateNickname(UpdateNicknameCommand command) {
         User user = getActiveUser(command.userId());
 
@@ -68,5 +70,18 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         }
 
         return user;
+    }
+
+    @Override
+    @Transactional
+    public void withdraw(WithdrawUserCommand command) {
+        User user = getActiveUser(command.userId());
+
+        if(!passwordEncoder.matches(command.password(), user.getPassword())) {
+            throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
+        }
+
+        updateUserPortOut.withdraw(command.userId());
+        jwtPortOut.deleteRefreshToken(command.userId());
     }
 }
