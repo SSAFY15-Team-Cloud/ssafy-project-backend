@@ -13,13 +13,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.repository.RoomParticipantJpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
-        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut,
+        SaveRoomParticipantsPortOut,
         LoadParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
@@ -63,53 +64,9 @@ public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, Fi
     }
 
     @Override
-    public List<RoomParticipant> loadActiveRoomParticipantsByRoomId(Long roomId) {
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
-        Room room = new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
-        return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
-                .stream()
-                .map(r->{
-                    User user = new User(
-                            r.getUserJpaEntity().getId(),
-                            r.getUserJpaEntity().getEmail(),
-                            r.getUserJpaEntity().getPassword(),
-                            r.getUserJpaEntity().getRole(),
-                            r.getUserJpaEntity().getNickname(),
-                            r.getUserJpaEntity().getName(),
-                            r.getUserJpaEntity().getProfileImageUrl(),
-                            r.getUserJpaEntity().isDeleted()
-                    );
-                    return new RoomParticipant(
-                        r.getId(),
-                        room,
-                        user,
-                        r.getRole(),
-                        r.getJoinedTime(),
-                        r.getDurationTime(),
-                        r.getCreatedTime(),
-                        r.isActive()
-                );
-                })
-                .toList();
-    }
-
-    @Override
-    public void saveRoomParticipants(List<RoomParticipant> roomParticipants) {
-        for(RoomParticipant rp : roomParticipants){
-            RoomParticipantJpaEntity roomParticipantJpaEntity = roomParticipantJpaRepository.findById(rp.getId())
-                    .orElseThrow(()-> new RuntimeException("방 참가자를 찾을 수 없습니다."));
-            roomParticipantJpaEntity.updateFrom(rp);
-            roomParticipantJpaRepository.save(roomParticipantJpaEntity);
-        }
+    public void deactivateActiveParticipantsByRoomId(Long roomId) {
+        LocalDateTime now = LocalDateTime.now();
+        roomParticipantJpaRepository.closeActiveParticipantsByRoomId(roomId, now);
     }
 
     @Override
@@ -129,43 +86,8 @@ public class RoomParticipantJpaAdapter implements SaveRoomParticipantPortOut, Fi
     }
 
     @Override
-    public Optional<RoomParticipant> findByRoom_IdAndUser_IdAndIsActiveTrue(Long roomId, Long userId) {
-
-        RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
-        Room room = new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
-
-        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("유저를 찾을 수 없습니다."));
-        User user = new User(
-                userJpaEntity.getId(),
-                userJpaEntity.getEmail(),
-                userJpaEntity.getPassword(),
-                userJpaEntity.getRole(),
-                userJpaEntity.getNickname(),
-                userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
-                userJpaEntity.isDeleted()
-        );
-        return roomParticipantJpaRepository.findByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(roomId, userId)
-                .map(r -> new RoomParticipant(
-                        r.getId(),
-                        room,
-                        user,
-                        r.getRole(),
-                        r.getJoinedTime(),
-                        r.getDurationTime(),
-                        r.getCreatedTime(),
-                        r.isActive()
-                ));
+    public boolean existsByRoom_IdAndUser_IdAndIsActiveTrue(Long roomId, Long userId) {
+        return roomParticipantJpaRepository.existsByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(roomId, userId);
     }
 
     @Override

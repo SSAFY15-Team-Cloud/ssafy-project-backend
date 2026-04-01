@@ -95,9 +95,9 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
     public List<GetParticipantsResult> getParticipants(GetParticipantsCommand getParticipantsCommand) {
         Long roomId = getParticipantsCommand.roomId();
         Long loginUserId = getParticipantsCommand.userId();
-        Optional<RoomParticipant> found = findRoomParticipantPortOut.findByRoom_IdAndUser_IdAndIsActiveTrue(roomId, loginUserId);
+        boolean isActiveParticipant = findRoomParticipantPortOut.existsByRoom_IdAndUser_IdAndIsActiveTrue(roomId, loginUserId);
         List<GetParticipantsResult> getParticipantsResults = List.of();
-        if(found.isPresent()){
+        if(isActiveParticipant){
             getParticipantsResults =  loadParticipantsPortOut.loadAllByRoomIdAndIsActiveTrue(roomId)
                     .stream()
                     .map(rp->new GetParticipantsResult(
@@ -108,7 +108,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
                     ))
                     .toList();
         }
-        if(found.isEmpty()){
+        if(!isActiveParticipant){
             throw new RuntimeException("방의 참가자만 다른 참가자들을 조회할 수 있습니다.");
         }
 
