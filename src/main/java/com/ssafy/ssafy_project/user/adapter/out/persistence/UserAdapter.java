@@ -44,6 +44,11 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     }
 
     @Override
+    public boolean existsActiveByNickname(String nickname) {
+        return userJpaRepository.existsByNicknameAndDeletedFalse(nickname);
+    }
+
+    @Override
     public User loadById(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));

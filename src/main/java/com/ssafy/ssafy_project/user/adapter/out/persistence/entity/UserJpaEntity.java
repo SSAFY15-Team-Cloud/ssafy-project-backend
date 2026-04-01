@@ -38,7 +38,7 @@ public class UserJpaEntity {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
     @Column(name = "name", nullable = false)

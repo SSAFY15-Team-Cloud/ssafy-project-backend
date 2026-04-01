@@ -59,6 +59,10 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
             return;
         }
 
+        if(loadUserPortOut.existsActiveByNickname(command.nickname())) {
+            throw new RuntimeException("이미 사용하고 있는 닉네임입니다.");
+        }
+
         updateUserPortOut.updateNickname(command.userId(), command.nickname());
     }
 
