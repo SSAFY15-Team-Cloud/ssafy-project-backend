@@ -73,18 +73,22 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
 
     @Override
     @Transactional
-    public Long signUp(SignUpCommand signUpCommand) {
-        if (loadUserPortOut.existsByEmail(signUpCommand.email())) {
+    public Long signUp(SignUpCommand command) {
+        if (loadUserPortOut.existsByEmail(command.email())) {
             throw new IllegalArgumentException("이미 존재하는 이메일");
         }
 
-        String encodedPassword = passwordEncoder.encode(signUpCommand.password());
+        if(loadUserPortOut.existsActiveByNickname(command.nickname())) {
+            throw new RuntimeException("이미 존재하는 닉네임");
+        }
+
+        String encodedPassword = passwordEncoder.encode(command.password());
 
         User user = new User(
-                signUpCommand.email(),
+                command.email(),
                 encodedPassword,
-                signUpCommand.nickname(),
-                signUpCommand.name(),
+                command.nickname(),
+                command.name(),
                 UserRole.USER,
                 null
         );
