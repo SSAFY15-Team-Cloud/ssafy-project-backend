@@ -7,7 +7,7 @@ public record CreateRoomResponse(
         String title,
         Long hostId,
         String roomCode,
-        LocalDateTime createdAt
+        LocalDateTime createdTime
 ) {
 
 }

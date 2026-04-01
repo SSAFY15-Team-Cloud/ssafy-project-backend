@@ -9,6 +9,6 @@ public record GetRoomResponse(
         String title,
         RoomStatus status,
         Long hostId,
-        LocalDateTime createdAt
+        LocalDateTime createdTime
 ) {
 }

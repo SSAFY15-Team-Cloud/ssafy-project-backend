@@ -1,4 +1,4 @@
-package com.ssafy.ssafy_project.room.adapter.in.web;
+package com.ssafy.ssafy_project.roomparticipant.adapter.in.web;
 
 import com.ssafy.ssafy_project.roomparticipant.adapter.in.web.dto.response.ParticipantResponse;
 import com.ssafy.ssafy_project.roomparticipant.adapter.in.web.dto.response.ParticipantsResponse;

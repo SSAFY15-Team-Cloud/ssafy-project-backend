@@ -45,7 +45,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
                 savedRoom.getTitle(),
                 savedRoom.getHostId(),
                 savedRoom.getRoomCode(),
-                savedRoom.getCreatedAt()
+                savedRoom.getCreatedTime()
         );
     }
 
@@ -101,7 +101,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
                 room.getTitle(),
                 room.getStatus(),
                 room.getHostId(),
-                room.getCreatedAt()
+                room.getCreatedTime()
         );
     }
 }
