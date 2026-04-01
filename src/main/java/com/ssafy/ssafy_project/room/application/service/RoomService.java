@@ -8,8 +8,6 @@ import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
