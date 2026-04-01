@@ -27,19 +27,19 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
 
     @Override
     public void saveRoomParticipant(RoomParticipant roomParticipant) {
-        RoomParticipantJpaEntity roomParticipantJpaEntity= null;
-        if(roomParticipant.getId() == null){
+        RoomParticipantJpaEntity roomParticipantJpaEntity = null;
+        if (roomParticipant.getId() == null) {
             RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomParticipant.getRoom().getId())
-                    .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
 
             UserJpaEntity userJpaEntity = userJpaRepository.findById(roomParticipant.getUser().getId())
-                    .orElseThrow(()-> new RuntimeException("유저 찾을 수 없습니다."));
+                    .orElseThrow(() -> new RuntimeException("유저 찾을 수 없습니다."));
             roomParticipantJpaEntity = new RoomParticipantJpaEntity(roomJpaEntity, userJpaEntity);
             roomParticipantJpaEntity.updateFrom(roomParticipant);
         }
-        if(roomParticipant.getId() != null){
+        if (roomParticipant.getId() != null) {
             roomParticipantJpaEntity = roomParticipantJpaRepository.findById(roomParticipant.getId())
-                    .orElseThrow(()-> new RuntimeException("방 참가자를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new RuntimeException("방 참가자를 찾을 수 없습니다."));
             roomParticipantJpaEntity.updateFrom(roomParticipant);
         }
         roomParticipantJpaRepository.save(roomParticipantJpaEntity);
@@ -48,64 +48,34 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
     @Override
     public Optional<RoomParticipant> findByRoomAndUser(Room room, User user) {
         return roomParticipantJpaRepository.findByRoomJpaEntity_IdAndUserJpaEntity_Id(room.getId(), user.getId())
-                .map(r ->
-                    new RoomParticipant(
-                        r.getId(),
-                        room,
-                        user,
-                        r.getRole(),
-                        r.getJoinedTime(),
-                        r.getDurationTime(),
-                        r.getCreatedTime(),
-                        r.isActive()
-                ));
+                .map(r -> toDomain(r,user,room));
     }
 
     @Override
     public List<RoomParticipant> loadActiveRoomParticipantsByRoomId(Long roomId) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
-        Room room = new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
+                .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
+
         return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
                 .stream()
-                .map(r->{
-                    User user = new User(
-                            r.getUserJpaEntity().getId(),
-                            r.getUserJpaEntity().getEmail(),
-                            r.getUserJpaEntity().getPassword(),
-                            r.getUserJpaEntity().getRole(),
-                            r.getUserJpaEntity().getNickname(),
-                            r.getUserJpaEntity().getName(),
-                            r.getUserJpaEntity().getProfileImageUrl(),
-                            r.getUserJpaEntity().isDeleted()
-                    );
-                    return new RoomParticipant(
-                        r.getId(),
-                        room,
-                        user,
-                        r.getRole(),
-                        r.getJoinedTime(),
-                        r.getDurationTime(),
-                        r.getCreatedTime(),
-                        r.isActive()
-                );
-                })
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<RoomParticipant> loadActiveRoomParticipantsByUserId(Long userId) {
+        List<RoomParticipantJpaEntity> roomParticipantJpaEntities = roomParticipantJpaRepository.findAllByUserJpaEntity_IdAndIsActiveTrue(userId);
+
+        return roomParticipantJpaEntities.stream()
+                .map(this::toDomain)
                 .toList();
     }
 
     @Override
     public void saveRoomParticipants(List<RoomParticipant> roomParticipants) {
-        for(RoomParticipant rp : roomParticipants){
+        for (RoomParticipant rp : roomParticipants) {
             RoomParticipantJpaEntity roomParticipantJpaEntity = roomParticipantJpaRepository.findById(rp.getId())
-                    .orElseThrow(()-> new RuntimeException("방 참가자를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new RuntimeException("방 참가자를 찾을 수 없습니다."));
             roomParticipantJpaEntity.updateFrom(rp);
             roomParticipantJpaRepository.save(roomParticipantJpaEntity);
         }
@@ -114,16 +84,58 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
     @Override
     public Optional<RoomParticipant> findByRoomAndUserAndIsActiveTrue(Room room, User user) {
         return roomParticipantJpaRepository.findByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(room.getId(), user.getId())
-                .map(r ->
-                        new RoomParticipant(
-                                r.getId(),
-                                room,
-                                user,
-                                r.getRole(),
-                                r.getJoinedTime(),
-                                r.getDurationTime(),
-                                r.getCreatedTime(),
-                                r.isActive()
-                        ));
+                .map(r -> toDomain(r, user, room));
+    }
+
+    private RoomParticipant toDomain(RoomParticipantJpaEntity roomParticipantJpaEntity) {
+        return new RoomParticipant(
+                roomParticipantJpaEntity.getId(),
+                toDomain(roomParticipantJpaEntity.getRoomJpaEntity()),
+                toDomain(roomParticipantJpaEntity.getUserJpaEntity()),
+                roomParticipantJpaEntity.getRole(),
+                roomParticipantJpaEntity.getJoinedTime(),
+                roomParticipantJpaEntity.getDurationTime(),
+                roomParticipantJpaEntity.getCreatedTime(),
+                roomParticipantJpaEntity.isActive()
+        );
+    }
+
+
+    private RoomParticipant toDomain(RoomParticipantJpaEntity roomParticipantJpaEntity, User user, Room room) {
+        return new RoomParticipant(
+                roomParticipantJpaEntity.getId(),
+                room,
+                user,
+                roomParticipantJpaEntity.getRole(),
+                roomParticipantJpaEntity.getJoinedTime(),
+                roomParticipantJpaEntity.getDurationTime(),
+                roomParticipantJpaEntity.getCreatedTime(),
+                roomParticipantJpaEntity.isActive()
+        );
+    }
+
+    private User toDomain(UserJpaEntity userJpaEntity) {
+        return new User(
+               userJpaEntity.getId(),
+               userJpaEntity.getEmail(),
+               userJpaEntity.getPassword(),
+               userJpaEntity.getRole(),
+               userJpaEntity.getNickname(),
+               userJpaEntity.getName(),
+               userJpaEntity.getProfileImageUrl(),
+               userJpaEntity.isDeleted()
+        );
+    }
+
+    private Room toDomain(RoomJpaEntity roomJpaEntity) {
+        return new Room(
+                roomJpaEntity.getId(),
+                roomJpaEntity.getTitle(),
+                roomJpaEntity.getUserJpaEntity().getId(),
+                roomJpaEntity.getRoomCode(),
+                roomJpaEntity.getStatus(),
+                roomJpaEntity.getEndedTime(),
+                roomJpaEntity.getCreatedTime()
+        );
     }
 }

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface LoadActiveRoomParticipantPortOut {
     List<RoomParticipant>  loadActiveRoomParticipantsByRoomId(Long roomId);
+    List<RoomParticipant> loadActiveRoomParticipantsByUserId(Long userId);
 }

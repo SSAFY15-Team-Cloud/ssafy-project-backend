@@ -7,10 +7,13 @@ import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.SaveRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 
 @Component
@@ -90,6 +93,24 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
                 roomJpaEntity.getEndedTime(),
                 roomJpaEntity.getCreatedTime()
         );
+    }
+
+    @Override
+    public List<Room> loadRunningRoomsByHostId(Long hostId) {
+        List<RoomJpaEntity> rooms = roomJpaRepository.findAllByUserJpaEntity_IdAndStatus(hostId, RoomStatus.RUNNING);
+
+
+        return rooms.stream()
+                .map((room)-> new Room(
+                        room.getId(),
+                        room.getTitle(),
+                        room.getUserJpaEntity().getId(),
+                        room.getRoomCode(),
+                        room.getStatus(),
+                        room.getEndedTime(),
+                        room.getCreatedTime()
+                ))
+                .toList();
     }
 }
 

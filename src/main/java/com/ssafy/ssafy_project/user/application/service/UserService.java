@@ -17,6 +17,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
     private final JwtPortOut jwtPortOut;
+    private final UserWithdrawalProcessor userWithdrawalProcessor;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -85,6 +86,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
             throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
         }
 
+        userWithdrawalProcessor.process(command.userId());
         updateUserPortOut.withdraw(command.userId());
         jwtPortOut.deleteRefreshToken(command.userId());
     }
