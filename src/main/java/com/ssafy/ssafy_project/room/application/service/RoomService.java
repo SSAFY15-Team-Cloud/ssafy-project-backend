@@ -8,8 +8,6 @@ import com.ssafy.ssafy_project.room.application.port.out.UpdateRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadActiveRoomParticipantPortOut;
-import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipant;
 import com.ssafy.ssafy_project.roomparticipant.domain.RoomParticipantRole;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
@@ -18,12 +16,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRoomPortIn {
+public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
+        DeleteRoomPortIn, GetRoomPortIn {
 
     private final SaveRoomPortOut saveRoomPortOut;
     private final UpdateRoomPortOut updateRoomPortOut;
@@ -86,5 +86,22 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn, DeleteRo
         }
 
         roomTerminationProcessor.terminate(room);
+    }
+
+    @Override
+    public GetRoomResult getRoom(GetRoomCommand getRoomCommand) {
+        String roomCode = getRoomCommand.roomCode();
+        Room room = loadRoomPortOut.loadByRoomCode(roomCode);
+        if(room.getStatus().equals(RoomStatus.ENDED)){
+            throw new RuntimeException("종료된 방입니다.");
+        }
+
+        return new GetRoomResult(
+                room.getId(),
+                room.getTitle(),
+                room.getStatus(),
+                room.getHostId(),
+                room.getCreatedAt()
+        );
     }
 }

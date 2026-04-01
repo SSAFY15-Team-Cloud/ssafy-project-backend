@@ -11,6 +11,7 @@ import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRe
 import com.ssafy.ssafy_project.user.domain.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.Map;
 import java.util.Optional;
@@ -101,6 +103,12 @@ public abstract class ControllerIntegrationTestSupport {
 
     @TestConfiguration
     static class TestInfraConfig {
+
+        @Bean
+        @ServiceConnection
+        PostgreSQLContainer<?> postgresContainer() {
+            return new PostgreSQLContainer<>("postgres:16-alpine");
+        }
 
         @Bean
         @Primary

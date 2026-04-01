@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -83,6 +84,21 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
     }
 
     @Test
+    void joinRoom_throws_exception_when_room_is_ended() {
+        UserJpaEntity owner = saveUser("ended-join-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("ended-join-participant@test.com", "password123!", "participant", "Participant");
+        RoomJpaEntity room = saveRoom("Ended Join Room", owner);
+        room.endRoom();
+        roomJpaRepository.save(room);
+
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
+    }
+
+    @Test
     void leaveRoom_deactivates_active_participant() throws Exception {
         UserJpaEntity owner = saveUser("leave-owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("leave-participant@test.com", "password123!", "participant", "Participant");
@@ -92,7 +108,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
@@ -106,7 +122,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
 
     @Test
     void leaveRoom_requires_authentication() throws Exception {
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", "ABCDEFGH"))
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", 1L))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -116,7 +132,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
         UserJpaEntity outsider = saveUser("outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Non Participant Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
                 .isInstanceOf(ServletException.class)
                 .hasRootCauseInstanceOf(RuntimeException.class)
@@ -148,7 +164,7 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/rooms/{roomCode}/leave", room.getRoomCode())
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
                 .andExpect(status().isOk());
 
@@ -164,5 +180,69 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
         assertThat(endedRoom.getEndedTime()).isNotNull();
         assertThat(ownerParticipant.isActive()).isFalse();
         assertThat(joinedParticipant.isActive()).isFalse();
+    }
+
+    @Test
+    void getParticipants_returns_active_participants_for_active_participant() throws Exception {
+        UserJpaEntity owner = saveUser("participants-owner@test.com", "password123!", "owner", "Owner");
+        UserJpaEntity participant = saveUser("participants-joiner@test.com", "password123!", "joiner", "Joiner");
+        UserJpaEntity leftParticipant = saveUser("participants-left@test.com", "password123!", "left", "Left");
+        String responseBody = mockMvc.perform(post("/api/rooms")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId()))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Participants Room"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long roomId = objectMapper.readTree(responseBody).get("roomId").asLong();
+        RoomJpaEntity room = roomJpaRepository.findById(roomId).orElseThrow();
+
+        mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(leftParticipant.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(leftParticipant.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/rooms/{roomId}/participants", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.length()").value(2))
+                .andExpect(jsonPath("$.users[0].userId").isNumber())
+                .andExpect(jsonPath("$.users[*].userId").value(org.hamcrest.Matchers.containsInAnyOrder(
+                        owner.getId().intValue(),
+                        participant.getId().intValue()
+                )))
+                .andExpect(jsonPath("$.users[?(@.userId == %s)]", leftParticipant.getId()).doesNotExist());
+    }
+
+    @Test
+    void getParticipants_requires_authentication() throws Exception {
+        mockMvc.perform(get("/api/rooms/{roomId}/participants", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getParticipants_fails_for_non_active_participant() throws Exception {
+        UserJpaEntity owner = saveUser("participants-owner2@test.com", "password123!", "owner2", "Owner2");
+        UserJpaEntity outsider = saveUser("participants-outsider@test.com", "password123!", "outsider", "Outsider");
+        RoomJpaEntity room = saveRoom("Participants Guard Room", owner);
+
+        assertThatThrownBy(() -> mockMvc.perform(get("/api/rooms/{roomId}/participants", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
     }
 }
