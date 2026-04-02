@@ -54,6 +54,12 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
     public void deactivateActiveParticipantsByRoomId(Long roomId, LocalDateTime now) {
         roomParticipantJpaRepository.closeActiveParticipantsByRoomId(roomId, now);
     }
+
+    @Override
+    public void deactivateActiveParticipantsByUserId(Long userId, LocalDateTime now) {
+        roomParticipantJpaRepository.closeActiveParticipantsByUserId(userId, now);
+    }
+
     @Override
     public List<RoomParticipant> loadActiveRoomParticipantsByRoomId(Long roomId) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
