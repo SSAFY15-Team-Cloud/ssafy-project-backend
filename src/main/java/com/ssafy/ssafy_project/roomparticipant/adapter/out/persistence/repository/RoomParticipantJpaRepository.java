@@ -35,4 +35,17 @@ public interface RoomParticipantJpaRepository extends JpaRepository<RoomParticip
             AND is_active = true
           """, nativeQuery = true)
     void closeActiveParticipantsByRoomId(@Param("roomId") Long roomId, @Param("now") LocalDateTime now);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+        UPDATE room_participants
+             SET duration_time = duration_time + EXTRACT(EPOCH FROM (:now - joined_time)) * 1000::bigint,
+                  is_active = false
+                WHERE user_id = :userId
+             AND is_active = true
+     """,nativeQuery = true)
+    void closeActiveParticipantsByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    List<RoomParticipantJpaEntity> findAllByUserJpaEntity_IdAndIsActiveTrue(Long userId);
+
 }
