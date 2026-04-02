@@ -4,13 +4,14 @@ import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.RegisterUserPortOut;
+import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
+public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, UpdateUserPortOut {
 
     private final UserJpaRepository userJpaRepository;
 
@@ -42,6 +43,19 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
         return userJpaRepository.existsByEmail(email);
     }
 
+    @Override
+    public boolean existsActiveByNickname(String nickname) {
+        return userJpaRepository.existsByNicknameAndDeletedFalse(nickname);
+    }
+
+    @Override
+    public User loadById(Long userId) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        return toDomain(userJpaEntity);
+    }
+
     private User toDomain(UserJpaEntity userJpaEntity) {
         return new User(
                 userJpaEntity.getId(),
@@ -56,60 +70,27 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut {
     }
 
     @Override
-    public User loadById(Long userId) {
+    public void updateNickname(Long userId, String nickname) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-//        public User(String email, String password, String nickname, String name, UserRole role, String profileImageUrl) {
-//        this.id = null;
-//        this.email = email;
-//        this.password = password;
-//        this.nickname = nickname;
-//        this.name = name;
-//        this.role = role;
-//        this.profileImageUrl = profileImageUrl;
-//    }
-
-//    private Long id;
-//
-//    @Column(name = "email", nullable = false, unique = true)
-//    private String email;
-//
-//    @Column(name = "password", nullable = false)
-//    private String password;
-//
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "role", nullable = false)
-//    private UserRole role;
-//
-//    @Column(name = "nickname")
-//    private String nickname;
-//
-//    @Column(name = "name", nullable = false)
-//    private String name;
-//
-//    @Column(name = "profile_image_url")
-//    private String profileImageUrl;
-//
-//    @Column(name = "is_deleted", nullable = false)
-//    private boolean deleted;
-//
-//    @CreationTimestamp
-//    @Column(name = "created_time", nullable = false, updatable = false)
-//    private LocalDateTime createdTime;
-//
-//    @UpdateTimestamp
-//    @Column(name = "updated_time", nullable = false)
-//    private LocalDateTime updatedTime;
-        return new User(
-                userJpaEntity.getId(),
-                userJpaEntity.getEmail(),
-                userJpaEntity.getPassword(),
-                userJpaEntity.getRole(),
-                userJpaEntity.getNickname(),
-                userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
-                userJpaEntity.isDeleted()
-        );
+        userJpaEntity.updateNickname(nickname);
     }
+
+    @Override
+    public void changePassword(Long userId, String password) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.changePassword(password);
+    }
+
+    @Override
+    public void withdraw(Long userId) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.softDelete();
+    }
+
 }
