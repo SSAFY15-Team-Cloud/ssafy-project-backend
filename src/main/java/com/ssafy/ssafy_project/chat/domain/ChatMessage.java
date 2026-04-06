@@ -25,7 +25,7 @@ public class ChatMessage {
 
     private boolean isDeleted = false;
 
-    void deleteMessage(){
+    public void deleteMessage(){
         this.isDeleted = true;
     }
 

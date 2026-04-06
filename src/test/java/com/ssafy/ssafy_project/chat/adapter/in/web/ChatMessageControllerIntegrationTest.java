@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -98,5 +99,44 @@ class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupp
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteMessage_marks_message_as_deleted_for_author() throws Exception {
+        UserJpaEntity owner = saveUser("chat-owner4@test.com", "password123!", "owner4", "Owner4");
+        RoomJpaEntity room = saveRoom("Delete Chat Room", owner);
+        ChatMessageJpaEntity savedMessage = chatMessageJpaRepository.save(
+                new ChatMessageJpaEntity("owner4", "delete me", room, owner)
+        );
+
+        mockMvc.perform(delete("/api/messages/{messageId}", savedMessage.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId())))
+                .andExpect(status().isNoContent());
+
+        ChatMessageJpaEntity deletedMessage = chatMessageJpaRepository.findById(savedMessage.getId()).orElseThrow();
+        assertThat(deletedMessage.isDeleted()).isTrue();
+        assertThat(deletedMessage.getMessage()).isEqualTo("delete me");
+    }
+
+    @Test
+    void deleteMessage_requires_authentication() throws Exception {
+        mockMvc.perform(delete("/api/messages/{messageId}", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteMessage_fails_for_non_author() {
+        UserJpaEntity owner = saveUser("chat-owner5@test.com", "password123!", "owner5", "Owner5");
+        UserJpaEntity otherUser = saveUser("chat-other@test.com", "password123!", "other", "Other");
+        RoomJpaEntity room = saveRoom("Delete Guard Room", owner);
+        ChatMessageJpaEntity savedMessage = chatMessageJpaRepository.save(
+                new ChatMessageJpaEntity("owner5", "protected", room, owner)
+        );
+
+        assertThatThrownBy(() -> mockMvc.perform(delete("/api/messages/{messageId}", savedMessage.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(otherUser.getId()))))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Request processing failed");
     }
 }
