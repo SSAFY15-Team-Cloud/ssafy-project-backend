@@ -2,6 +2,7 @@ package com.ssafy.ssafy_project.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.ssafy_project.global.application.port.out.RefreshTokenPortOut;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,7 @@ public class TestInfraConfig {
 
     @Bean
     @ServiceConnection
+    @ConditionalOnProperty(name = "test.use-testcontainers", havingValue = "true", matchIfMissing = true)
     PostgreSQLContainer<?> postgresContainer() {
         return new PostgreSQLContainer<>("postgres:16-alpine");
     }
