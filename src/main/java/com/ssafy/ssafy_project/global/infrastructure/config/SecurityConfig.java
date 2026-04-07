@@ -36,7 +36,9 @@ public class SecurityConfig {
     private final JwtPortOut jwtPortOut;
 
     private static final String[] whiteList = {
-            "/api/auth/**"
+            "/api/auth/**",
+            "/ws/**",
+            "/ws-stomp/**"
     };
 
     // 작업 순위1. CSRF

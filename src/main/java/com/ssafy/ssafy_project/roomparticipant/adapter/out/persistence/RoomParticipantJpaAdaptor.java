@@ -20,7 +20,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, FindRoomParticipantPortOut,
-        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut {
+        LoadActiveRoomParticipantPortOut, SaveRoomParticipantsPortOut, LoadParticipantsPortOut {
     private final RoomParticipantJpaRepository roomParticipantJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final RoomJpaRepository roomJpaRepository;
@@ -76,6 +76,14 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
         List<RoomParticipantJpaEntity> roomParticipantJpaEntities = roomParticipantJpaRepository.findAllByUserJpaEntity_IdAndIsActiveTrue(userId);
 
         return roomParticipantJpaEntities.stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<RoomParticipant> loadAllByRoomIdAndIsActiveTrue(Long roomId) {
+        return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
+                .stream()
                 .map(this::toDomain)
                 .toList();
     }

@@ -1,8 +1,8 @@
 package com.ssafy.ssafy_project.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssafy.ssafy_project.global.application.port.out.RefreshTokenPortOut;
 import com.ssafy.ssafy_project.global.infrastructure.security.JwtTokenProvider;
+import com.ssafy.ssafy_project.chat.adapter.out.persistence.repository.ChatMessageJpaRepository;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.repository.RoomParticipantJpaRepository;
@@ -10,30 +10,17 @@ import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import com.ssafy.ssafy_project.user.domain.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {
-        com.ssafy.ssafy_project.SsafyProjectApplication.class,
-        ControllerIntegrationTestSupport.TestInfraConfig.class
-})
+@Import(TestInfraConfig.class)
 public abstract class ControllerIntegrationTestSupport {
 
     @Autowired
@@ -58,9 +45,13 @@ public abstract class ControllerIntegrationTestSupport {
     protected RoomParticipantJpaRepository roomParticipantJpaRepository;
 
     @Autowired
-    protected InMemoryRefreshTokenPortOut refreshTokenPortOut;
+    protected ChatMessageJpaRepository chatMessageJpaRepository;
+
+    @Autowired
+    protected TestInfraConfig.InMemoryRefreshTokenPortOut refreshTokenPortOut;
 
     protected void clearPersistence() {
+        chatMessageJpaRepository.deleteAll();
         roomParticipantJpaRepository.deleteAll();
         roomJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
@@ -102,48 +93,4 @@ public abstract class ControllerIntegrationTestSupport {
         return setCookieHeader.substring(valueStart, valueEnd);
     }
 
-    @TestConfiguration
-    static class TestInfraConfig {
-
-        @Bean
-        @ServiceConnection
-        @ConditionalOnProperty(name = "test.use-testcontainers", havingValue = "true", matchIfMissing = true)
-        PostgreSQLContainer<?> postgresContainer() {
-            return new PostgreSQLContainer<>("postgres:16-alpine");
-        }
-
-        @Bean
-        @Primary
-        InMemoryRefreshTokenPortOut refreshTokenPortOut() {
-            return new InMemoryRefreshTokenPortOut();
-        }
-
-        @Bean
-        ObjectMapper objectMapper() {
-            return new ObjectMapper();
-        }
-    }
-
-    public static class InMemoryRefreshTokenPortOut implements RefreshTokenPortOut {
-        private final Map<Long, String> storage = new ConcurrentHashMap<>();
-
-        @Override
-        public void save(Long userId, String refreshToken, long expirationMillis) {
-            storage.put(userId, refreshToken);
-        }
-
-        @Override
-        public Optional<String> find(Long userId) {
-            return Optional.ofNullable(storage.get(userId));
-        }
-
-        @Override
-        public void delete(Long userId) {
-            storage.remove(userId);
-        }
-
-        public void clear() {
-            storage.clear();
-        }
-    }
 }

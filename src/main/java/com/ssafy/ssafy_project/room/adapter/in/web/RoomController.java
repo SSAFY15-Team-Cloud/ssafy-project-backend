@@ -33,7 +33,7 @@ public class RoomController {
                         createRoomResult.title(),
                         createRoomResult.hostId(),
                         createRoomResult.roomCode(),
-                        createRoomResult.createdAt()
+                        createRoomResult.createdTime()
                 ));
     }
 

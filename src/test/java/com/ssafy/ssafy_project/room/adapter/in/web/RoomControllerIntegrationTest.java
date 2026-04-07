@@ -139,7 +139,7 @@ class RoomControllerIntegrationTest extends ControllerIntegrationTestSupport {
                 .andExpect(jsonPath("$.title").value("Room Info"))
                 .andExpect(jsonPath("$.status").value(RoomStatus.RUNNING.name()))
                 .andExpect(jsonPath("$.hostId").value(owner.getId()))
-                .andExpect(jsonPath("$.createdAt").isNotEmpty());
+                .andExpect(jsonPath("$.createdTime").isNotEmpty());
     }
 
     @Test
