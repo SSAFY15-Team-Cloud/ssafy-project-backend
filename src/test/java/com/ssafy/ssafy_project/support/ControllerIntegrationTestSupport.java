@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -106,6 +107,7 @@ public abstract class ControllerIntegrationTestSupport {
 
         @Bean
         @ServiceConnection
+        @ConditionalOnProperty(name = "test.use-testcontainers", havingValue = "true", matchIfMissing = true)
         PostgreSQLContainer<?> postgresContainer() {
             return new PostgreSQLContainer<>("postgres:16-alpine");
         }
