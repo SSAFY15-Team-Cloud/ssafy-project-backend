@@ -11,16 +11,16 @@ public class Room {
     private String roomCode;
     private RoomStatus status;
     private LocalDateTime endedTime;
-    private LocalDateTime createdAt;
+    private LocalDateTime createdTime;
 
-    public Room(Long id, String title, Long hostId, String roomCode, RoomStatus status, LocalDateTime endedTime, LocalDateTime createdAt){
+    public Room(Long id, String title, Long hostId, String roomCode, RoomStatus status, LocalDateTime endedTime, LocalDateTime createdTime){
         this.id = id;
         this.title = title;
         this.hostId = hostId;
         this.roomCode = roomCode;
         this.status = status;
         this.endedTime = endedTime;
-        this.createdAt = createdAt;
+        this.createdTime = createdTime;
     }
 
     public Room(String title, Long hostId){

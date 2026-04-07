@@ -36,10 +36,17 @@ public class ChatMessageJpaEntity {
     private String message;
 
     @CreationTimestamp
-    @Column(name="created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name="created_time", nullable = false)
+    private LocalDateTime createdTime;
 
-
-    @Column(nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
+
+    public ChatMessageJpaEntity(String senderNickname, String message, RoomJpaEntity roomJpaEntity, UserJpaEntity userJpaEntity){
+        this.senderNickname = senderNickname;
+        this.message = message;
+        this.roomJpaEntity = roomJpaEntity;
+        this.userJpaEntity = userJpaEntity;
+    }
 }
+

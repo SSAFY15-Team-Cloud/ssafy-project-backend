@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Test</title>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --panel: #ffffff;
+            --line: #d8dce8;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --accent: #0f766e;
+            --accent-strong: #115e59;
+            --danger: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 16px;
+            background:
+                    radial-gradient(circle at top left, #dff7f4, transparent 30%),
+                    linear-gradient(180deg, #fbfcff 0%, #eef2ff 100%);
+            color: var(--text);
+            font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        }
+
+        .layout {
+            max-width: 960px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        h1, h2 {
+            margin: 0 0 12px;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .grid.two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            font: inherit;
+            color: var(--text);
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 999px;
+            padding: 11px 16px;
+            background: var(--accent);
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #334155;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .dot.connected {
+            background: #16a34a;
+        }
+
+        .dot.error {
+            background: var(--danger);
+        }
+
+        .log {
+            min-height: 300px;
+            max-height: 480px;
+            overflow: auto;
+            padding: 16px;
+            border-radius: 14px;
+            background: #0f172a;
+            color: #dbeafe;
+            font-family: "SFMono-Regular", "Menlo", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .help-list {
+            margin: 12px 0 0;
+            padding-left: 18px;
+            color: var(--muted);
+        }
+
+        @media (max-width: 720px) {
+            .grid.two {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <section class="panel">
+        <h1>WebSocket Chat Test</h1>
+        <p>로그인으로 받은 access token과 roomId를 넣고 실시간 채팅을 테스트한다. 서로 다른 사용자 토큰으로 창을 두 개 이상 열면 실제 송수신도 바로 확인할 수 있다.</p>
+        <ul class="help-list">
+            <li>테스트 전에 각 사용자로 방 입장을 먼저 완료해야 한다.</li>
+            <li>같은 roomId를 넣은 여러 창이 동시에 구독하면 서로의 메시지를 실시간으로 확인할 수 있다.</li>
+            <li>기본 WebSocket URL은 현재 페이지 origin 기준으로 자동 채운다.</li>
+        </ul>
+    </section>
+
+    <section class="panel">
+        <div class="grid two">
+            <div>
+                <label for="wsUrl">WebSocket URL</label>
+                <input id="wsUrl" type="text">
+            </div>
+            <div>
+                <label for="roomId">Room ID</label>
+                <input id="roomId" type="number" min="1" placeholder="예: 1">
+            </div>
+        </div>
+
+        <div class="grid" style="margin-top: 12px;">
+            <div>
+                <label for="token">Access Token</label>
+                <textarea id="token" placeholder="Bearer 접두어 없이 access token만 입력"></textarea>
+            </div>
+            <div>
+                <label for="message">Message</label>
+                <textarea id="message" placeholder="보낼 메시지를 입력"></textarea>
+            </div>
+        </div>
+
+        <div class="grid two" style="margin-top: 12px;">
+            <div>
+                <label for="deleteBaseUrl">Delete API Base URL</label>
+                <input id="deleteBaseUrl" type="text">
+            </div>
+            <div>
+                <label for="deleteMessageId">Delete Message ID</label>
+                <input id="deleteMessageId" type="number" min="1" placeholder="예: 10">
+            </div>
+        </div>
+
+        <div class="actions" style="margin-top: 16px;">
+            <button id="connectButton">Connect</button>
+            <button id="subscribeButton" class="secondary">Subscribe</button>
+            <button id="sendButton">Send</button>
+            <button id="deleteButton" class="secondary">Delete</button>
+            <button id="disconnectButton" class="danger">Disconnect</button>
+        </div>
+
+        <div style="margin-top: 14px;">
+            <span class="status"><span id="statusDot" class="dot"></span><span id="statusText">Disconnected</span></span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Logs</h2>
+        <div id="log" class="log"></div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.2.0/bundles/stomp.umd.min.js"></script>
+<script>
+    const wsUrlInput = document.getElementById("wsUrl");
+    const roomIdInput = document.getElementById("roomId");
+    const tokenInput = document.getElementById("token");
+    const messageInput = document.getElementById("message");
+    const deleteBaseUrlInput = document.getElementById("deleteBaseUrl");
+    const deleteMessageIdInput = document.getElementById("deleteMessageId");
+    const connectButton = document.getElementById("connectButton");
+    const subscribeButton = document.getElementById("subscribeButton");
+    const sendButton = document.getElementById("sendButton");
+    const deleteButton = document.getElementById("deleteButton");
+    const disconnectButton = document.getElementById("disconnectButton");
+    const logElement = document.getElementById("log");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    const defaultWsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    const defaultDeleteBaseUrl = `${location.protocol}//${location.host}`;
+    wsUrlInput.value = defaultWsUrl;
+    deleteBaseUrlInput.value = defaultDeleteBaseUrl;
+
+    let stompClient = null;
+    let messageSubscription = null;
+    let deletionSubscription = null;
+
+    function setStatus(type, text) {
+        statusDot.className = "dot";
+        if (type === "connected") {
+            statusDot.classList.add("connected");
+        }
+        if (type === "error") {
+            statusDot.classList.add("error");
+        }
+        statusText.textContent = text;
+    }
+
+    function log(message, payload) {
+        const time = new Date().toLocaleTimeString();
+        const content = payload ? `${message}\n${payload}` : message;
+        logElement.textContent += `[${time}] ${content}\n\n`;
+        logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    function getRoomId() {
+        const roomId = roomIdInput.value.trim();
+        if (!roomId) {
+            throw new Error("roomId를 입력해야 한다.");
+        }
+        return roomId;
+    }
+
+    function ensureConnected() {
+        if (!stompClient || !stompClient.connected) {
+            throw new Error("먼저 CONNECT 해야 한다.");
+        }
+    }
+
+    connectButton.addEventListener("click", () => {
+        const token = tokenInput.value.trim();
+        const wsUrl = wsUrlInput.value.trim();
+
+        if (!token) {
+            log("CONNECT 실패", "access token을 입력해야 한다.");
+            setStatus("error", "Token Required");
+            return;
+        }
+
+        if (stompClient && stompClient.active) {
+            log("이미 연결 중이거나 연결된 상태다.");
+            return;
+        }
+
+        stompClient = new StompJs.Client({
+            brokerURL: wsUrl,
+            connectHeaders: {
+                Authorization: `Bearer ${token}`
+            },
+            reconnectDelay: 0,
+            debug: (value) => log("STOMP DEBUG", value),
+            onConnect: (frame) => {
+                setStatus("connected", "Connected");
+                log("CONNECTED", JSON.stringify(frame.headers, null, 2));
+            },
+            onStompError: (frame) => {
+                setStatus("error", "STOMP Error");
+                log("STOMP ERROR", frame.body || JSON.stringify(frame.headers, null, 2));
+            },
+            onWebSocketError: (event) => {
+                setStatus("error", "WebSocket Error");
+                log("WEBSOCKET ERROR", JSON.stringify(event));
+            },
+            onWebSocketClose: (event) => {
+                setStatus("default", "Disconnected");
+                log("WEBSOCKET CLOSED", `code=${event.code}, reason=${event.reason || "empty"}`);
+                messageSubscription = null;
+                deletionSubscription = null;
+            }
+        });
+
+        setStatus("default", "Connecting");
+        log("CONNECT 시도", wsUrl);
+        stompClient.activate();
+    });
+
+    subscribeButton.addEventListener("click", () => {
+        try {
+            ensureConnected();
+            const roomId = getRoomId();
+
+            if (messageSubscription) {
+                messageSubscription.unsubscribe();
+                messageSubscription = null;
+            }
+
+            if (deletionSubscription) {
+                deletionSubscription.unsubscribe();
+                deletionSubscription = null;
+            }
+
+            messageSubscription = stompClient.subscribe(`/sub/rooms/${roomId}`, (message) => {
+                log("MESSAGE RECEIVED", message.body);
+            });
+
+            deletionSubscription = stompClient.subscribe(`/sub/rooms/${roomId}/deletions`, (message) => {
+                log("MESSAGE DELETED", message.body);
+            });
+
+            log("SUBSCRIBED", `/sub/rooms/${roomId}`);
+            log("SUBSCRIBED", `/sub/rooms/${roomId}/deletions`);
+        } catch (error) {
+            log("SUBSCRIBE 실패", error.message);
+            setStatus("error", "Subscribe Failed");
+        }
+    });
+
+    sendButton.addEventListener("click", () => {
+        try {
+            ensureConnected();
+            const roomId = getRoomId();
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                throw new Error("보낼 메시지를 입력해야 한다.");
+            }
+
+            const payload = JSON.stringify({ message });
+            stompClient.publish({
+                destination: `/pub/rooms/${roomId}/messages`,
+                body: payload
+            });
+
+            log("MESSAGE SENT", payload);
+        } catch (error) {
+            log("SEND 실패", error.message);
+            setStatus("error", "Send Failed");
+        }
+    });
+
+    deleteButton.addEventListener("click", async () => {
+        try {
+            const token = tokenInput.value.trim();
+            const deleteBaseUrl = deleteBaseUrlInput.value.trim();
+            const deleteMessageId = deleteMessageIdInput.value.trim();
+
+            if (!token) {
+                throw new Error("access token을 입력해야 한다.");
+            }
+            if (!deleteBaseUrl) {
+                throw new Error("Delete API Base URL을 입력해야 한다.");
+            }
+            if (!deleteMessageId) {
+                throw new Error("삭제할 messageId를 입력해야 한다.");
+            }
+
+            const response = await fetch(`${deleteBaseUrl}/api/messages/${deleteMessageId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const responseText = await response.text();
+            log("DELETE RESPONSE", `status=${response.status}\n${responseText || "(empty body)"}`);
+        } catch (error) {
+            log("DELETE 실패", error.message);
+            setStatus("error", "Delete Failed");
+        }
+    });
+
+    disconnectButton.addEventListener("click", () => {
+        if (!stompClient) {
+            return;
+        }
+
+        if (messageSubscription) {
+            messageSubscription.unsubscribe();
+            messageSubscription = null;
+        }
+
+        if (deletionSubscription) {
+            deletionSubscription.unsubscribe();
+            deletionSubscription = null;
+        }
+
+        stompClient.deactivate();
+        stompClient = null;
+        setStatus("default", "Disconnected");
+        log("DISCONNECTED");
+    });
+</script>
+</body>
+</html>
