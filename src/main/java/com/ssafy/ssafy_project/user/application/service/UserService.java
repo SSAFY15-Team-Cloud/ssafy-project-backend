@@ -2,20 +2,25 @@ package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.user.application.port.in.*;
+import com.ssafy.ssafy_project.user.application.port.out.GenerateProfileImageUploadUrlPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn {
+public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
+    private final GenerateProfileImageUploadUrlPortOut generateProfileImageUploadUrlPortOut;
     private final JwtPortOut jwtPortOut;
     private final UserWithdrawalProcessor userWithdrawalProcessor;
     private final PasswordEncoder passwordEncoder;
@@ -89,5 +94,22 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         userWithdrawalProcessor.process(command.userId());
         updateUserPortOut.withdraw(command.userId());
         jwtPortOut.deleteRefreshToken(command.userId());
+    }
+
+    @Override
+    public GenerateProfileImageUploadUrlResult generateUrl(GenerateProfileImageUploadUrlCommand command) {
+        User user = getActiveUser(command.userId());
+
+        String objectKey = generateProfileImageKey(user.getId());
+        String uploadUrl = generateProfileImageUploadUrlPortOut.generateUploadUrl(objectKey);
+
+        return new GenerateProfileImageUploadUrlResult(
+                uploadUrl,
+                objectKey
+        );
+    }
+
+    private String generateProfileImageKey(Long userId) {
+        return "/" + userId + "/" + UUID.randomUUID() + ".jpg";
     }
 }
