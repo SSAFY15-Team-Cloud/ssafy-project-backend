@@ -44,8 +44,8 @@ public class UserJpaEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "profile_image_url")
-    private String profileImageUrl;
+    @Column(name = "profile_image_key")
+    private String profileImageKey;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted;

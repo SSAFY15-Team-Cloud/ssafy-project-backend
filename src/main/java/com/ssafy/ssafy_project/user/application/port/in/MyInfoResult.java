@@ -5,6 +5,6 @@ public record MyInfoResult(
         String email,
         String nickname,
         String name,
-        String profileImageUrl
+        String profileImageKey
 ) {
 }

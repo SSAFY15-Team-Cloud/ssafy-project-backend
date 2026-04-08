@@ -32,7 +32,7 @@ public class UserController {
                 result.email(),
                 result.nickname(),
                 result.name(),
-                result.profileImageUrl()
+                result.profileImageKey()
         );
 
         return ResponseEntity.ok(response);

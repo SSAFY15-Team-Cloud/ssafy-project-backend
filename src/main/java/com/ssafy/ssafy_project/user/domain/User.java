@@ -15,17 +15,17 @@ public class User {
     private UserRole role;
     private String nickname;
     private String name;
-    private String profileImageUrl;
+    private String profileImageKey;
     private boolean deleted;
 
-    public User(String email, String password, String nickname, String name, UserRole role, String profileImageUrl) {
+    public User(String email, String password, String nickname, String name, UserRole role, String profileImageKey) {
         this.id = null;
         this.email = email;
         this.password = password;
         this.nickname = nickname;
         this.name = name;
         this.role = role;
-        this.profileImageUrl = profileImageUrl;
+        this.profileImageKey = profileImageKey;
     }
 
 }

@@ -29,7 +29,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
                 user.getEmail(),
                 user.getNickname(),
                 user.getName(),
-                user.getProfileImageUrl()
+                user.getProfileImageKey()
         );
     }
 

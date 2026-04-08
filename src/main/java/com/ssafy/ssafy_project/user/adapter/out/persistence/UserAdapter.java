@@ -64,7 +64,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
                 userJpaEntity.getRole(),
                 userJpaEntity.getNickname(),
                 userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
+                userJpaEntity.getProfileImageKey(),
                 userJpaEntity.isDeleted()
         );
     }
