@@ -2,13 +2,12 @@ package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.user.application.port.in.*;
-import com.ssafy.ssafy_project.user.application.port.out.GenerateProfileImageUploadUrlPortOut;
+import com.ssafy.ssafy_project.user.application.port.out.ProfileImageStoragePortOut;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +19,7 @@ import java.util.UUID;
 public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
-    private final GenerateProfileImageUploadUrlPortOut generateProfileImageUploadUrlPortOut;
+    private final ProfileImageStoragePortOut profileImageStoragePortOut;
     private final JwtPortOut jwtPortOut;
     private final UserWithdrawalProcessor userWithdrawalProcessor;
     private final PasswordEncoder passwordEncoder;
@@ -101,7 +100,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         User user = getActiveUser(command.userId());
 
         String objectKey = generateProfileImageKey(user.getId());
-        String uploadUrl = generateProfileImageUploadUrlPortOut.generateUploadUrl(objectKey);
+        String uploadUrl = profileImageStoragePortOut.generateUploadUrl(objectKey);
 
         return new GenerateProfileImageUploadUrlResult(
                 uploadUrl,
@@ -110,6 +109,6 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     }
 
     private String generateProfileImageKey(Long userId) {
-        return "/" + userId + "/" + UUID.randomUUID() + ".jpg";
+        return userId + "/" + UUID.randomUUID() + ".jpg";
     }
 }
