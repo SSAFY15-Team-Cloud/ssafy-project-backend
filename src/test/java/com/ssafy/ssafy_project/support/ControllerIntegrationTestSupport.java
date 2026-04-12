@@ -50,12 +50,16 @@ public abstract class ControllerIntegrationTestSupport {
     @Autowired
     protected TestInfraConfig.InMemoryRefreshTokenPortOut refreshTokenPortOut;
 
+    @Autowired
+    protected TestInfraConfig.InMemoryProfileImageStoragePortOut profileImageStoragePortOut;
+
     protected void clearPersistence() {
         chatMessageJpaRepository.deleteAll();
         roomParticipantJpaRepository.deleteAll();
         roomJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
         refreshTokenPortOut.clear();
+        profileImageStoragePortOut.clear();
     }
 
     protected UserJpaEntity saveUser(String email, String rawPassword, String nickname, String name) {
