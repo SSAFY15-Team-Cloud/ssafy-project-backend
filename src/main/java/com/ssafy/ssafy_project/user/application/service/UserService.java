@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
+import com.ssafy.ssafy_project.global.infrastructure.config.ProfileImageProperties;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import com.ssafy.ssafy_project.user.application.port.out.ProfileImageStoragePortOut;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn, ChangeProfileImagePortIn, DeleteProfileImagePortIn {
+
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
     private final ProfileImageStoragePortOut profileImageStoragePortOut;
@@ -27,6 +29,8 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
 
     private final PasswordEncoder passwordEncoder;
     private final ProfileImageUrlResolver profileImageUrlResolver;
+
+    private final ProfileImageProperties profileImageProperties;
 
     @Override
     public MyInfoResult getMyInfo(GetMyInfoCommand command) {
@@ -113,7 +117,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     }
 
     private String generateProfileImageKey(Long userId) {
-        return userId + "/" + UUID.randomUUID() + ".jpg";
+        return profileImageProperties.prefix() + "/" + userId + "/" + UUID.randomUUID() + ".jpg";
     }
 
     @Override
@@ -136,12 +140,12 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         }
     }
 
-    private static void validateProfileImageKey(Long userId, String objectKey) {
+    private void validateProfileImageKey(Long userId, String objectKey) {
         if (objectKey == null || objectKey.isBlank()) {
             throw new RuntimeException("Object Key 값이 필요합니다.");
         }
 
-        String prefix = userId + "/";
+        String prefix = profileImageProperties.prefix() + "/" + userId + "/";
 
         if (!objectKey.startsWith(prefix)) {
             throw new RuntimeException("유효하지 않은 Object Key값입니다.");

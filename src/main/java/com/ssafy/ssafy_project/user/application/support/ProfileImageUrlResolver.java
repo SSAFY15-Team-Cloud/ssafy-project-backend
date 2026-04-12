@@ -1,24 +1,22 @@
 package com.ssafy.ssafy_project.user.application.support;
 
+import com.ssafy.ssafy_project.global.infrastructure.config.ProfileImageProperties;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class ProfileImageUrlResolver {
 
-    private static final String DEFAULT_IMAGE_KEY = "default.jpg";
+    private final ProfileImageProperties profileImageProperties;
 
-    @Value("${app.profile-image.base-url}")
-    private String baseUrl;
 
     public String resolve(String profileImageKey) {
         if(profileImageKey == null || profileImageKey.isBlank()) {
-            return baseUrl + "/" + DEFAULT_IMAGE_KEY;
+            return profileImageProperties.baseUrl() + "/" + profileImageProperties.prefix() + "/default.jpg";
         }
 
-        return baseUrl + "/" + profileImageKey;
+        return profileImageProperties.baseUrl() + "/" + profileImageKey;
     }
 
 }
