@@ -5,4 +5,5 @@ public interface UpdateUserPortOut {
     void changePassword(Long userId, String password);
     void changeProfileImage(Long userId, String objectKey);
     void withdraw(Long userId);
+    void deleteProfileImage(Long userId);
 }

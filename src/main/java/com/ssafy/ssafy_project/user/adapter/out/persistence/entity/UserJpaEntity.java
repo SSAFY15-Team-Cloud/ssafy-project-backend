@@ -86,4 +86,8 @@ public class UserJpaEntity {
     public void softDelete() {
         this.deleted = true;
     }
+
+    public void deleteProfileImageKey() {
+        this.profileImageKey = null;
+    }
 }

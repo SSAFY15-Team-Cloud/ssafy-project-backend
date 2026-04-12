@@ -26,6 +26,7 @@ public class UserController {
     private final WithdrawUserPortIn withdrawUserPortIn;
     private final ChangeProfileImagePortIn changeProfileImagePortIn;
     private final GenerateProfileImageUploadUrlPortIn generateProfileImageUploadUrlPortIn;
+    private final DeleteProfileImagePortIn deleteProfileImagePortIn;
     private final CookieProvider cookieProvider;
 
     @GetMapping("/me")
@@ -96,6 +97,16 @@ public class UserController {
                 new ChangeProfileImageCommand(
                         userId, request.objectKey()
                 )
+        );
+
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<Void> deleteUserProfileImage(@AuthenticationPrincipal Long userId) {
+        deleteProfileImagePortIn.deleteProfileImage(
+                new DeleteProfileImageCommand(userId)
         );
 
         return ResponseEntity.noContent()

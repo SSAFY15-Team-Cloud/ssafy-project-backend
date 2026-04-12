@@ -101,4 +101,12 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
         userJpaEntity.softDelete();
     }
 
+    @Override
+    public void deleteProfileImage(Long userId) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.deleteProfileImageKey();
+    }
+
 }

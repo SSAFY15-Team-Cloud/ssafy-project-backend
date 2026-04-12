@@ -16,7 +16,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn, ChangeProfileImagePortIn {
+public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn, ChangeProfileImagePortIn, DeleteProfileImagePortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
     private final ProfileImageStoragePortOut profileImageStoragePortOut;
@@ -42,11 +42,11 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     public void changePassword(ChangePasswordCommand command) {
         User user = getActiveUser(command.userId());
 
-        if(!passwordEncoder.matches(command.currentPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(command.currentPassword(), user.getPassword())) {
             throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
         }
 
-        if(passwordEncoder.matches(command.newPassword(), user.getPassword())) {
+        if (passwordEncoder.matches(command.newPassword(), user.getPassword())) {
             throw new RuntimeException("동일한 비밀번호로는 변경이 불가합니다.");
         }
 
@@ -60,11 +60,11 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     public void updateNickname(UpdateNicknameCommand command) {
         User user = getActiveUser(command.userId());
 
-        if(user.getNickname().equals(command.nickname())) {
+        if (user.getNickname().equals(command.nickname())) {
             return;
         }
 
-        if(loadUserPortOut.existsActiveByNickname(command.nickname())) {
+        if (loadUserPortOut.existsActiveByNickname(command.nickname())) {
             throw new RuntimeException("이미 사용하고 있는 닉네임입니다.");
         }
 
@@ -74,7 +74,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     private User getActiveUser(Long userId) {
         User user = loadUserPortOut.loadById(userId);
 
-        if(user.isDeleted()) {
+        if (user.isDeleted()) {
             throw new RuntimeException("삭제된 사용자입니다.");
         }
 
@@ -86,7 +86,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     public void withdraw(WithdrawUserCommand command) {
         User user = getActiveUser(command.userId());
 
-        if(!passwordEncoder.matches(command.password(), user.getPassword())) {
+        if (!passwordEncoder.matches(command.password(), user.getPassword())) {
             throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
         }
 
@@ -123,14 +123,29 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     }
 
     private static void validateProfileImageKey(Long userId, String objectKey) {
-        if(objectKey == null || objectKey.isBlank()) {
+        if (objectKey == null || objectKey.isBlank()) {
             throw new RuntimeException("Object Key 값이 필요합니다.");
         }
 
         String prefix = userId + "/";
 
-        if(!objectKey.startsWith(prefix)) {
+        if (!objectKey.startsWith(prefix)) {
             throw new RuntimeException("유효하지 않은 Object Key값입니다.");
         }
+    }
+
+    @Override
+    @Transactional
+    public void deleteProfileImage(DeleteProfileImageCommand command) {
+        User user = getActiveUser(command.userId());
+
+        String profileImageKey = user.getProfileImageKey();
+
+        if(profileImageKey == null || profileImageKey.isBlank()) {
+            return;
+        }
+
+        updateUserPortOut.deleteProfileImage(user.getId());
+        profileImageStoragePortOut.delete(profileImageKey);
     }
 }
