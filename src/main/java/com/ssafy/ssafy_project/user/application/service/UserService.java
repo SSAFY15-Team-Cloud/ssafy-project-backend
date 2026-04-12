@@ -119,7 +119,17 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
 
         validateProfileImageKey(user.getId(), command.objectKey());
 
+        String currentProfileImageKey = user.getProfileImageKey();
+
+        if(command.objectKey().equals(currentProfileImageKey)) {
+            return;
+        }
+
         updateUserPortOut.changeProfileImage(user.getId(), command.objectKey());
+
+        if(currentProfileImageKey != null && !currentProfileImageKey.isBlank()) {
+            profileImageStoragePortOut.delete(currentProfileImageKey);
+        }
     }
 
     private static void validateProfileImageKey(Long userId, String objectKey) {
