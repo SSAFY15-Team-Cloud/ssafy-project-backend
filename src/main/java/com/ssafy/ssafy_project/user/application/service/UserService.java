@@ -16,7 +16,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn {
+public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, ChangePasswordPortIn, WithdrawUserPortIn, GenerateProfileImageUploadUrlPortIn, ChangeProfileImagePortIn {
     private final LoadUserPortOut loadUserPortOut;
     private final UpdateUserPortOut updateUserPortOut;
     private final ProfileImageStoragePortOut profileImageStoragePortOut;
@@ -110,5 +110,27 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
 
     private String generateProfileImageKey(Long userId) {
         return userId + "/" + UUID.randomUUID() + ".jpg";
+    }
+
+    @Override
+    @Transactional
+    public void changeProfileImage(ChangeProfileImageCommand command) {
+        User user = getActiveUser(command.userId());
+
+        validateProfileImageKey(user.getId(), command.objectKey());
+
+        updateUserPortOut.changeProfileImage(user.getId(), command.objectKey());
+    }
+
+    private static void validateProfileImageKey(Long userId, String objectKey) {
+        if(objectKey == null || objectKey.isBlank()) {
+            throw new RuntimeException("Object Key 값이 필요합니다.");
+        }
+
+        String prefix = userId + "/";
+
+        if(!objectKey.startsWith(prefix)) {
+            throw new RuntimeException("유효하지 않은 Object Key값입니다.");
+        }
     }
 }

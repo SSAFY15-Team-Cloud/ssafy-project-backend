@@ -75,6 +75,10 @@ public class UserJpaEntity {
         this.password = password;
     }
 
+    public void changeProfileImageKey(String objectKey) {
+        this.profileImageKey = objectKey;
+    }
+
     public void changeRole(UserRole role) {
         this.role = role;
     }
