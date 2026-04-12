@@ -5,6 +5,7 @@ import com.ssafy.ssafy_project.user.application.port.in.*;
 import com.ssafy.ssafy_project.user.application.port.out.ProfileImageStoragePortOut;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
 import com.ssafy.ssafy_project.user.application.port.out.UpdateUserPortOut;
+import com.ssafy.ssafy_project.user.application.support.ProfileImageUrlResolver;
 import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,8 +22,11 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
     private final UpdateUserPortOut updateUserPortOut;
     private final ProfileImageStoragePortOut profileImageStoragePortOut;
     private final JwtPortOut jwtPortOut;
+
     private final UserWithdrawalProcessor userWithdrawalProcessor;
+
     private final PasswordEncoder passwordEncoder;
+    private final ProfileImageUrlResolver profileImageUrlResolver;
 
     @Override
     public MyInfoResult getMyInfo(GetMyInfoCommand command) {
@@ -33,7 +37,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
                 user.getEmail(),
                 user.getNickname(),
                 user.getName(),
-                user.getProfileImageKey()
+                profileImageUrlResolver.resolve(user.getProfileImageKey())
         );
     }
 

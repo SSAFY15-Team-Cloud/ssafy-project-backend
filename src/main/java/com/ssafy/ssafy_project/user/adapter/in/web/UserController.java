@@ -37,7 +37,7 @@ public class UserController {
                 result.email(),
                 result.nickname(),
                 result.name(),
-                result.profileImageKey()
+                result.profileImageUrl()
         );
 
         return ResponseEntity.ok(response);
