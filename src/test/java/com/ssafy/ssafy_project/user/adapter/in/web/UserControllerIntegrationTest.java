@@ -40,7 +40,7 @@ class UserControllerIntegrationTest extends ControllerIntegrationTestSupport {
                 .andExpect(jsonPath("$.email").value("me@test.com"))
                 .andExpect(jsonPath("$.nickname").value("me-user"))
                 .andExpect(jsonPath("$.name").value("Me User"))
-                .andExpect(jsonPath("$.profileImageKey").isEmpty());
+                .andExpect(jsonPath("$.profileImageUrl").value(profileImageProperties.baseUrl() + "/" + profileImageProperties.prefix() + "/default.jpg"));
     }
 
     @Test

@@ -31,7 +31,7 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uploadUrl").value(org.hamcrest.Matchers.containsString("https://test-bucket.s3.amazonaws.com/")))
-                .andExpect(jsonPath("$.objectKey").value(org.hamcrest.Matchers.startsWith(user.getId() + "/")))
+                .andExpect(jsonPath("$.objectKey").value(org.hamcrest.Matchers.startsWith(profileImageProperties.prefix() + "/" + user.getId() + "/")))
                 .andExpect(jsonPath("$.objectKey").value(org.hamcrest.Matchers.endsWith(".jpg")));
     }
 
@@ -50,13 +50,13 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                               {
-                                "objectKey": "%d/test-image.jpg"
+                                "objectKey": "%s/%d/test-image.jpg"
                               }
-                              """.formatted(user.getId())))
+                              """.formatted(profileImageProperties.prefix(), user.getId())))
                 .andExpect(status().isNoContent());
 
         UserJpaEntity updatedUser = userJpaRepository.findById(user.getId()).orElseThrow();
-        assertThat(updatedUser.getProfileImageKey()).isEqualTo(user.getId() + "/test-image.jpg");
+        assertThat(updatedUser.getProfileImageKey()).isEqualTo(profileImageProperties.prefix() + "/" + user.getId() + "/test-image.jpg");
     }
 
     @Test
@@ -84,16 +84,16 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                           {
-                            "objectKey": "999/test-image.jpg"
+                            "objectKey": "%s/999/test-image.jpg"
                           }
-                          """))
+                          """.formatted(profileImageProperties.prefix())))
         ).hasRootCauseInstanceOf(RuntimeException.class);
     }
 
     @Test
     void deleteUserProfileImage_clears_profile_image_key() throws Exception {
         UserJpaEntity user = saveUser("profile-delete@test.com", "password123!", "profile-delete", "Profile Delete");
-        user.changeProfileImageKey(user.getId() + "/existing-image.jpg");
+        user.changeProfileImageKey(profileImageProperties.prefix() + "/" + user.getId() + "/existing-image.jpg");
         userJpaRepository.save(user);
 
         mockMvc.perform(delete("/api/users/me/profile-image")
@@ -102,7 +102,7 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
 
         UserJpaEntity updatedUser = userJpaRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getProfileImageKey()).isNull();
-        assertThat(profileImageStoragePortOut.deletedKeys()).contains(user.getId() + "/existing-image.jpg");
+        assertThat(profileImageStoragePortOut.deletedKeys()).contains(profileImageProperties.prefix() + "/" + user.getId() + "/existing-image.jpg");
     }
 
     @Test
