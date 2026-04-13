@@ -71,4 +71,4 @@ src/main/resources/application.properties
 /.gitmessage.txt
 src/test/resources/application-test.properties
 hyuncheol
-application.properties
+src/main/resources/application.properties
