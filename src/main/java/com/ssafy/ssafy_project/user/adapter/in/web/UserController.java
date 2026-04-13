@@ -2,8 +2,10 @@ package com.ssafy.ssafy_project.user.adapter.in.web;
 
 import com.ssafy.ssafy_project.global.infrastructure.web.CookieProvider;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.ChangePasswordRequest;
+import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.ChangeProfileImageRequest;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.UpdateNicknameRequest;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.request.WithdrawRequest;
+import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.GenerateProfileImageUploadUrlResponse;
 import com.ssafy.ssafy_project.user.adapter.in.web.dto.response.MyInfoResponse;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import jakarta.validation.Valid;
@@ -22,6 +24,9 @@ public class UserController {
     private final UpdateNicknamePortIn updateNicknamePortIn;
     private final ChangePasswordPortIn changePasswordPortIn;
     private final WithdrawUserPortIn withdrawUserPortIn;
+    private final ChangeProfileImagePortIn changeProfileImagePortIn;
+    private final GenerateProfileImageUploadUrlPortIn generateProfileImageUploadUrlPortIn;
+    private final DeleteProfileImagePortIn deleteProfileImagePortIn;
     private final CookieProvider cookieProvider;
 
     @GetMapping("/me")
@@ -69,6 +74,42 @@ public class UserController {
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, deletedCookie.toString())
+                .build();
+    }
+
+    @GetMapping("/me/profile-image/upload-url")
+    public ResponseEntity<GenerateProfileImageUploadUrlResponse> generateProfileImageUploadUrl(@AuthenticationPrincipal Long userId) {
+        GenerateProfileImageUploadUrlResult result = generateProfileImageUploadUrlPortIn.generateUrl(
+                new GenerateProfileImageUploadUrlCommand(userId)
+        );
+
+        return ResponseEntity.ok(
+                new GenerateProfileImageUploadUrlResponse(
+                        result.uploadUrl(),
+                        result.objectKey()
+                )
+        );
+    }
+
+    @PostMapping("/me/profile-image")
+    public ResponseEntity<Void> changeUserProfileImage(@AuthenticationPrincipal Long userId, @Valid @RequestBody ChangeProfileImageRequest request) {
+        changeProfileImagePortIn.changeProfileImage(
+                new ChangeProfileImageCommand(
+                        userId, request.objectKey()
+                )
+        );
+
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<Void> deleteUserProfileImage(@AuthenticationPrincipal Long userId) {
+        deleteProfileImagePortIn.deleteProfileImage(
+                new DeleteProfileImageCommand(userId)
+        );
+
+        return ResponseEntity.noContent()
                 .build();
     }
 

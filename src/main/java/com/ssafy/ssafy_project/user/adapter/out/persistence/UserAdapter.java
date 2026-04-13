@@ -64,7 +64,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
                 userJpaEntity.getRole(),
                 userJpaEntity.getNickname(),
                 userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
+                userJpaEntity.getProfileImageKey(),
                 userJpaEntity.isDeleted()
         );
     }
@@ -86,11 +86,27 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     }
 
     @Override
+    public void changeProfileImage(Long userId, String objectKey) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.changeProfileImageKey(objectKey);
+    }
+
+    @Override
     public void withdraw(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
         userJpaEntity.softDelete();
+    }
+
+    @Override
+    public void deleteProfileImage(Long userId) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        userJpaEntity.deleteProfileImageKey();
     }
 
 }
