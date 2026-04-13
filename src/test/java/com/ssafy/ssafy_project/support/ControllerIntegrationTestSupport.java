@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.ssafy_project.global.infrastructure.config.ProfileImageProperties;
 import com.ssafy.ssafy_project.global.infrastructure.security.JwtTokenProvider;
 import com.ssafy.ssafy_project.chat.adapter.out.persistence.repository.ChatMessageJpaRepository;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
@@ -50,12 +51,19 @@ public abstract class ControllerIntegrationTestSupport {
     @Autowired
     protected TestInfraConfig.InMemoryRefreshTokenPortOut refreshTokenPortOut;
 
+    @Autowired
+    protected TestInfraConfig.InMemoryProfileImageStoragePortOut profileImageStoragePortOut;
+
+    @Autowired
+    protected ProfileImageProperties profileImageProperties;
+
     protected void clearPersistence() {
         chatMessageJpaRepository.deleteAll();
         roomParticipantJpaRepository.deleteAll();
         roomJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
         refreshTokenPortOut.clear();
+        profileImageStoragePortOut.clear();
     }
 
     protected UserJpaEntity saveUser(String email, String rawPassword, String nickname, String name) {

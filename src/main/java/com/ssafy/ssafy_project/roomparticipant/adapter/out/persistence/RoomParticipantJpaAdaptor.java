@@ -143,7 +143,7 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
                 userJpaEntity.getRole(),
                 userJpaEntity.getNickname(),
                 userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
+                userJpaEntity.getProfileImageKey(),
                 userJpaEntity.isDeleted()
         );
     }

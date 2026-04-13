@@ -44,8 +44,8 @@ public class UserJpaEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "profile_image_url")
-    private String profileImageUrl;
+    @Column(name = "profile_image_key")
+    private String profileImageKey;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted;
@@ -75,11 +75,19 @@ public class UserJpaEntity {
         this.password = password;
     }
 
+    public void changeProfileImageKey(String objectKey) {
+        this.profileImageKey = objectKey;
+    }
+
     public void changeRole(UserRole role) {
         this.role = role;
     }
 
     public void softDelete() {
         this.deleted = true;
+    }
+
+    public void deleteProfileImageKey() {
+        this.profileImageKey = null;
     }
 }

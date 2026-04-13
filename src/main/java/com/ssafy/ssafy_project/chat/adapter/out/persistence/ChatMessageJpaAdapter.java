@@ -124,7 +124,7 @@ public class ChatMessageJpaAdapter implements CreateMessagePortOut, LoadMessageP
                 userJpaEntity.getRole(),
                 userJpaEntity.getNickname(),
                 userJpaEntity.getName(),
-                userJpaEntity.getProfileImageUrl(),
+                userJpaEntity.getProfileImageKey(),
                 userJpaEntity.isDeleted()
         );
     }
