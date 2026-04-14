@@ -4,6 +4,8 @@ import com.ssafy.ssafy_project.audio.adapter.in.web.dto.CreateAudioRequest;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
 import com.ssafy.ssafy_project.audio.application.port.in.ProcessRoomAudiosPortIn;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,5 +1,6 @@
 package com.ssafy.ssafy_project.audio.application.service;
 
+import com.ssafy.ssafy_project.audio.application.event.AudioCreatedEvent;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
 import com.ssafy.ssafy_project.audio.application.port.in.ProcessRoomAudiosPortIn;
@@ -11,6 +12,7 @@ import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
 import com.ssafy.ssafy_project.audio.domain.AudioUploadStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
     private final AudioQueryPort audioQueryPort;
     private final AudioFilePortOut audioFilePortOut;
     private final AudioTranscriptionPortOut audioTranscriptionPortOut;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -44,7 +47,8 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
                 .sttStatus(AudioSttStatus.PENDING)
                 .build();
 
-        audioCommandPort.save(audio);
+        Audio saved = audioCommandPort.save(audio);
+        applicationEventPublisher.publishEvent(new AudioCreatedEvent(saved.getId(), saved.getRoomId()));
     }
 
     @Override
