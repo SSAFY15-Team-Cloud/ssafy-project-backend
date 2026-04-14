@@ -1,9 +1,13 @@
 package com.ssafy.ssafy_project.audio.application.service;
 
-import com.ssafy.ssafy_project.audio.adapter.in.web.dto.CreateAudioRequest;
-import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioJpaEntity;
-import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioJpaRepository;
+import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
+import com.ssafy.ssafy_project.audio.application.port.in.ProcessRoomAudiosPortIn;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioCommandPort;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioFilePortOut;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioQueryPort;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioTranscriptionPortOut;
+import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
 import com.ssafy.ssafy_project.audio.domain.AudioUploadStatus;
 import lombok.RequiredArgsConstructor;
@@ -11,30 +15,70 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
-public class AudioService implements CreateAudioMetadataPortIn {
+@Transactional(readOnly = true)
+public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudiosPortIn {
 
-    private final AudioJpaRepository audioJpaRepository;
+    private final AudioCommandPort audioCommandPort;
+    private final AudioQueryPort audioQueryPort;
+    private final AudioFilePortOut audioFilePortOut;
+    private final AudioTranscriptionPortOut audioTranscriptionPortOut;
 
     @Override
-    public void create(Long roomId, CreateAudioRequest request) {
-        AudioJpaEntity entity = AudioJpaEntity.builder()
-                .roomId(roomId)
-                .speakerId(request.getSpeakerId())
-                .path(request.getPath())
-                .mimeType(request.getMimeType())
-                .duration(request.getDuration())
-                .fileSize(request.getFileSize())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+    @Transactional
+    public void create(CreateAudioMetadataCommand command) {
+        Audio audio = Audio.builder()
+                .roomId(command.roomId())
+                .speakerId(command.speakerId())
+                .path(command.path())
+                .mimeType(command.mimeType())
+                .duration(command.duration())
+                .fileSize(command.fileSize())
+                .startTime(command.startTime())
+                .endTime(command.endTime())
                 .createdTime(LocalDateTime.now())
                 .uploadStatus(AudioUploadStatus.UPLOADED)
                 .sttStatus(AudioSttStatus.PENDING)
                 .build();
 
-        audioJpaRepository.save(entity);
+        audioCommandPort.save(audio);
+    }
+
+    @Override
+    @Transactional
+    public void processRoomAudios(Long roomId) {
+        List<Audio> audios = audioQueryPort.loadPendingByRoomId(roomId);
+
+        for (Audio audio : audios) {
+            processSingleAudio(audio);
+        }
+    }
+
+    @Transactional
+    public void processSingleAudioById(Long audioId) {
+        processSingleAudio(audioQueryPort.loadById(audioId));
+    }
+
+    private void processSingleAudio(Audio audio) {
+        try {
+            audio.markProcessing();
+            audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());
+
+            byte[] bytes = audioFilePortOut.downloadAudio(audio.getPath());
+            String filename = audioFilePortOut.extractFilename(audio.getPath());
+            String text = audioTranscriptionPortOut.transcribe(bytes, filename);
+
+            audioCommandPort.saveTranscription(audio.getId(), text);
+
+            audio.markDone();
+            audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());
+        } catch (Exception e) {
+            audio.markFailed();
+            audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());
+            throw new RuntimeException("audio STT processing failed. audioId=" + audio.getId(), e);
+        }
     }
 }

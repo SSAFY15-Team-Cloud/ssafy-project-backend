@@ -1,6 +1,6 @@
 package com.ssafy.ssafy_project.global.infrastructure.openai;
 
-import com.ssafy.ssafy_project.audio.adapter.in.web.dto.OpenAiTranscriptionResponse;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioTranscriptionPortOut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -12,32 +12,28 @@ import org.springframework.web.client.RestClient;
 
 @Component
 @RequiredArgsConstructor
-public class OpenAiWhisperClient {
+public class OpenAiWhisperClient implements AudioTranscriptionPortOut {
 
-    // RestClient 간단 사용
-    // Todo 1. openai endpoint check
     private final RestClient restClient = RestClient.builder()
             .baseUrl("https://api.openai.com/v1")
             .build();
 
-    @Value("${openai.api.key")
+    @Value("${openai.api.key}")
     private String apiKey;
 
-    public String transcribe(byte[] audioBytes, String filename){
-        // Override 안해주면, null 반환
-        ByteArrayResource resource = new ByteArrayResource(audioBytes){
+    @Override
+    public String transcribe(byte[] audioBytes, String filename) {
+        ByteArrayResource resource = new ByteArrayResource(audioBytes) {
             @Override
             public String getFilename() {
                 return filename;
             }
         };
 
-        MultiValueMap<String, Object>  body = new LinkedMultiValueMap<>();
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", resource);
-        // Todo 2. Model searching and choice
         body.add("model", "whisper-1");
 
-        // Todo 3. Api 명세서에 transcriptions 추가하기
         OpenAiTranscriptionResponse response = restClient.post()
                 .uri("/audio/transcriptions")
                 .header("Authorization", "Bearer " + apiKey)
@@ -47,12 +43,9 @@ public class OpenAiWhisperClient {
                 .body(OpenAiTranscriptionResponse.class);
 
         if (response == null || response.text() == null) {
-            throw new IllegalStateException("OpenAI transcription 응답이 비어 있습니다.");
+            throw new IllegalStateException("OpenAI transcription response is empty.");
         }
 
         return response.text();
-
-
     }
-
 }

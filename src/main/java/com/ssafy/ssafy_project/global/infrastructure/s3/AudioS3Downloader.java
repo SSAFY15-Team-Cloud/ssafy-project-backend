@@ -1,7 +1,7 @@
 package com.ssafy.ssafy_project.global.infrastructure.s3;
 
+import com.ssafy.ssafy_project.audio.application.port.out.AudioFilePortOut;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -13,7 +13,7 @@ import java.net.URI;
 
 @Component
 @RequiredArgsConstructor
-public class AudioS3Downloader {
+public class AudioS3Downloader implements AudioFilePortOut {
 
     private final S3Client s3Client;
 
@@ -23,6 +23,7 @@ public class AudioS3Downloader {
     @Value("${app.audio.prefix}")
     private String audioPrefix;
 
+    @Override
     public byte[] downloadAudio(String fullPath) {
         String bucket = extractBucketName();
         String key = extractKey(fullPath);
@@ -36,6 +37,7 @@ public class AudioS3Downloader {
         return response.asByteArray();
     }
 
+    @Override
     public String extractFilename(String fullPath) {
         String key = extractKey(fullPath);
         int idx = key.lastIndexOf('/');
@@ -44,10 +46,10 @@ public class AudioS3Downloader {
 
     private String extractBucketName() {
         URI uri = URI.create(baseUrl);
-        String host = uri.getHost(); // ex) bucket.s3.ap-southeast-2.amazonaws.com
+        String host = uri.getHost();
         int idx = host.indexOf(".s3.");
         if (idx < 0) {
-            throw new IllegalStateException("S3 bucket host 형식이 올바르지 않습니다: " + host);
+            throw new IllegalStateException("S3 bucket host format is invalid: " + host);
         }
         return host.substring(0, idx);
     }
@@ -60,10 +62,9 @@ public class AudioS3Downloader {
         }
 
         if (!key.startsWith(audioPrefix)) {
-            throw new IllegalArgumentException("audio prefix와 맞지 않는 path 입니다. path=" + fullPath);
+            throw new IllegalArgumentException("audio prefix does not match path. path=" + fullPath);
         }
 
         return key;
     }
-
 }

@@ -55,4 +55,7 @@ public class AudioJpaEntity {
     @Column(name = "stt_status", nullable = false)
     private AudioSttStatus sttStatus;
 
+    public void updateSttStatus(AudioSttStatus sttStatus) {
+        this.sttStatus = sttStatus;
+    }
 }
