@@ -4,11 +4,13 @@ import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioJpaEntity;
 import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioJpaRepository;
 import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioTextJpaEntity;
 import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioTextJpaRepository;
+import com.ssafy.ssafy_project.audio.application.event.AudioSttCompletedEvent;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
 import com.ssafy.ssafy_project.global.infrastructure.openai.OpenAiWhisperClient;
 import com.ssafy.ssafy_project.global.infrastructure.s3.AudioS3Downloader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class AudioSttWorkerService {
     private final AudioTextJpaRepository audioTextJpaRepository;
     private final AudioS3Downloader audioS3Downloader;
     private final OpenAiWhisperClient openAiWhisperClient;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public void processSingleAudioById(Long audioId) {
@@ -54,6 +57,7 @@ public class AudioSttWorkerService {
             audioJpaRepository.save(audio);
 
             log.info("STT completed. audioId={}", audioId);
+            applicationEventPublisher.publishEvent(new AudioSttCompletedEvent(audio.getId(), audio.getRoomId()));
         } catch (Exception e) {
             audio.updateSttStatus(AudioSttStatus.FAILED);
             audioJpaRepository.save(audio);

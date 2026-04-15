@@ -2,6 +2,7 @@ package com.ssafy.ssafy_project.audio.adapter.out.persistence;
 
 import com.ssafy.ssafy_project.audio.application.port.out.AudioCommandPort;
 import com.ssafy.ssafy_project.audio.application.port.out.AudioQueryPort;
+import com.ssafy.ssafy_project.audio.application.port.out.TranscriptSegment;
 import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -71,6 +73,27 @@ public class AudioPersistenceAdapter implements AudioCommandPort, AudioQueryPort
         return audioJpaRepository.findAllByRoomIdAndSttStatus(roomId, AudioSttStatus.PENDING)
                 .stream()
                 .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public boolean existsUnfinishedByRoomId(Long roomId) {
+        return audioJpaRepository.existsByRoomIdAndSttStatusIn(
+                roomId,
+                Set.of(AudioSttStatus.PENDING, AudioSttStatus.PROCESSING, AudioSttStatus.FAILED)
+        );
+    }
+
+    @Override
+    public List<TranscriptSegment> loadTranscriptSegmentsByRoomId(Long roomId) {
+        return audioTextJpaRepository.findTranscriptSegmentsByRoomIdOrderByAudioTime(roomId)
+                .stream()
+                .map(segment -> new TranscriptSegment(
+                        segment.getSpeakerName(),
+                        segment.getStartTime(),
+                        segment.getEndTime(),
+                        segment.getText()
+                ))
                 .toList();
     }
 

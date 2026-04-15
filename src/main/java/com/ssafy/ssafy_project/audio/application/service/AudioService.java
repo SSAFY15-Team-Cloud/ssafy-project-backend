@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.audio.application.service;
 
 import com.ssafy.ssafy_project.audio.application.event.AudioCreatedEvent;
+import com.ssafy.ssafy_project.audio.application.event.AudioSttCompletedEvent;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
 import com.ssafy.ssafy_project.audio.application.port.in.ProcessRoomAudiosPortIn;
@@ -11,6 +12,11 @@ import com.ssafy.ssafy_project.audio.application.port.out.AudioTranscriptionPort
 import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
 import com.ssafy.ssafy_project.audio.domain.AudioUploadStatus;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
+import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
+import com.ssafy.ssafy_project.room.domain.Room;
+import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -28,11 +34,17 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
     private final AudioQueryPort audioQueryPort;
     private final AudioFilePortOut audioFilePortOut;
     private final AudioTranscriptionPortOut audioTranscriptionPortOut;
+    private final LoadRoomPortOut loadRoomPortOut;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
     public void create(CreateAudioMetadataCommand command) {
+        Room room = loadRoomPortOut.loadById(command.roomId());
+        if (room.getStatus() == RoomStatus.ENDED) {
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
+        }
+
         Audio audio = Audio.builder()
                 .roomId(command.roomId())
                 .speakerId(command.speakerId())
@@ -79,6 +91,7 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
 
             audio.markDone();
             audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());
+            applicationEventPublisher.publishEvent(new AudioSttCompletedEvent(audio.getId(), audio.getRoomId()));
         } catch (Exception e) {
             audio.markFailed();
             audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());

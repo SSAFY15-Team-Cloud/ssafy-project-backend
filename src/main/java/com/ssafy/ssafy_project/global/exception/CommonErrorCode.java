@@ -8,8 +8,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum CommonErrorCode implements ErrorCode {
 
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "50010", "서버 내부 오류가 발생했습니다."),
-    TEST_CUSTOM_ERROR(HttpStatus.BAD_REQUEST, "40010", "AudioController 강제 커스텀 예외입니다.");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "50010", "Internal server error."),
+    TEST_CUSTOM_ERROR(HttpStatus.BAD_REQUEST, "40010", "Forced custom exception from AudioController."),
+    ROOM_ALREADY_ENDED(HttpStatus.CONFLICT, "40910", "Cannot create audio metadata for an ended room.");
 
     private final HttpStatus statusCode;
     private final String errorCode;
