@@ -37,6 +37,7 @@ public class SecurityConfig {
 
     private static final String[] whiteList = {
             "/api/auth/**",
+            "/ws",
             "/ws/**",
             "/ws-stomp/**"
     };

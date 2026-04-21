@@ -161,6 +161,36 @@ class ChatRealtimeIntegrationTest {
     }
 
     @Test
+    void leaveRoom_disconnects_websocket_session_after_commit() throws Exception {
+        UserJpaEntity owner = saveUser("leave-ws-owner@test.com", "password123!", "leave-ws-owner", "Leave Ws Owner");
+        UserJpaEntity participant = saveUser("leave-ws-participant@test.com", "password123!", "leave-ws-participant", "Leave Ws Participant");
+
+        Long roomId = createRoom(owner.getId(), "Leave WebSocket Room");
+        RoomJpaEntity room = roomJpaRepository.findById(roomId).orElseThrow();
+
+        joinRoom(room.getRoomCode(), participant.getId());
+
+        TestStompSessionHandler participantHandler = new TestStompSessionHandler();
+        StompSession participantSession = connect(createAccessToken(participant.getId()), participantHandler);
+        subscribe(participantSession, roomId);
+
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", roomId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isOk());
+
+        boolean disconnected = false;
+        for (int attempt = 0; attempt < 20; attempt++) {
+            if (!participantSession.isConnected()) {
+                disconnected = true;
+                break;
+            }
+            Thread.sleep(100L);
+        }
+
+        assertThat(disconnected).isTrue();
+    }
+
+    @Test
     void deleteMessage_broadcasts_deletion_and_marks_message_deleted() throws Exception {
         UserJpaEntity owner = saveUser("delete-owner@test.com", "password123!", "delete-owner", "Delete Owner");
         Long roomId = createRoom(owner.getId(), "Delete Realtime Room");
