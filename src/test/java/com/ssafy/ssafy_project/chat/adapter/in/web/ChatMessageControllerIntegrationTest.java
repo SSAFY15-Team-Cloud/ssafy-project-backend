@@ -8,13 +8,13 @@ import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupport {
 
@@ -24,81 +24,49 @@ class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupp
     }
 
     @Test
-    void createMessage_saves_message_for_active_participant() throws Exception {
+    void getMessages_returns_messages_for_active_participant() throws Exception {
         UserJpaEntity owner = saveUser("chat-owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("chat-participant@test.com", "password123!", "participant", "Participant");
         RoomJpaEntity room = saveRoom("Chat Room", owner);
 
-        mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/rooms/{roomCode}/join", room.getRoomCode())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/rooms/{roomId}/messages", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "message": "hello chat"
-                                }
-                                """))
-                .andExpect(status().isCreated());
+        chatMessageJpaRepository.save(new ChatMessageJpaEntity("owner", "first message", room, owner));
+        chatMessageJpaRepository.save(new ChatMessageJpaEntity("participant", "second message", room, participant));
 
-        assertThat(chatMessageJpaRepository.count()).isEqualTo(1);
-        ChatMessageJpaEntity savedMessage = chatMessageJpaRepository.findAll().getFirst();
-
-        assertThat(savedMessage.getRoomJpaEntity().getId()).isEqualTo(room.getId());
-        assertThat(savedMessage.getUserJpaEntity().getId()).isEqualTo(participant.getId());
-        assertThat(savedMessage.getSenderNickname()).isEqualTo(participant.getNickname());
-        assertThat(savedMessage.getMessage()).isEqualTo("hello chat");
-        assertThat(savedMessage.getCreatedTime()).isNotNull();
-        assertThat(savedMessage.isDeleted()).isFalse();
+        mockMvc.perform(get("/api/room/{roomId}/messages", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(2))
+                .andExpect(jsonPath("$.messages[0].senderId").value(owner.getId()))
+                .andExpect(jsonPath("$.messages[0].senderNickname").value("owner"))
+                .andExpect(jsonPath("$.messages[0].message").value("first message"))
+                .andExpect(jsonPath("$.messages[0].createdTime").isNotEmpty())
+                .andExpect(jsonPath("$.messages[1].senderId").value(participant.getId()))
+                .andExpect(jsonPath("$.messages[1].senderNickname").value("participant"))
+                .andExpect(jsonPath("$.messages[1].message").value("second message"))
+                .andExpect(jsonPath("$.messages[1].createdTime").isNotEmpty());
     }
 
     @Test
-    void createMessage_requires_authentication() throws Exception {
-        mockMvc.perform(post("/api/rooms/{roomId}/messages", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "message": "hello"
-                                }
-                                """))
+    void getMessages_requires_authentication() throws Exception {
+        mockMvc.perform(get("/api/room/{roomId}/messages", 1L))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void createMessage_fails_for_non_participant() {
+    void getMessages_fails_for_non_participant() {
         UserJpaEntity owner = saveUser("chat-owner2@test.com", "password123!", "owner2", "Owner2");
         UserJpaEntity outsider = saveUser("chat-outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Chat Guard Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomId}/messages", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "message": "should fail"
-                                }
-                                """)))
+        assertThatThrownBy(() -> mockMvc.perform(get("/api/room/{roomId}/messages", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
                 .isInstanceOf(ServletException.class)
                 .hasRootCauseInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Request processing failed");
-    }
-
-    @Test
-    void createMessage_rejects_blank_message() throws Exception {
-        UserJpaEntity owner = saveUser("chat-owner3@test.com", "password123!", "owner3", "Owner3");
-        RoomJpaEntity room = saveRoom("Blank Chat Room", owner);
-
-        mockMvc.perform(post("/api/rooms/{roomId}/messages", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(owner.getId()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "message": "   "
-                                }
-                                """))
-                .andExpect(status().isBadRequest());
     }
 
     @Test
