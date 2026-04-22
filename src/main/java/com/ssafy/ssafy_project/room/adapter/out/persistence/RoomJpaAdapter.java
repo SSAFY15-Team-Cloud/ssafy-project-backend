@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.room.adapter.out.persistence;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.room.application.port.out.DeleteRoomPortOut;
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-
 @Component
 @RequiredArgsConstructor
 public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadRoomPortOut, DeleteRoomPortOut {
@@ -25,65 +26,50 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
 
     @Override
     public Room saveRoom(Room room) {
-
         UserJpaEntity userJpaEntity = userJpaRepository.getReferenceById(room.getHostId());
         RoomJpaEntity roomJpaEntity = roomJpaRepository.save(new RoomJpaEntity(room.getTitle(), userJpaEntity));
-        return new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
+        return toDomain(roomJpaEntity);
     }
 
     @Override
     public Room updateRoom(Room room) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(room.getId())
-                .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
-
+                .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
 
         roomJpaEntity.updateTitle(room.getTitle());
-
-        return new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
+        return toDomain(roomJpaEntity);
     }
 
     @Override
     public Room loadById(Long roomId) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
-        return new Room(
-                roomJpaEntity.getId(),
-                roomJpaEntity.getTitle(),
-                roomJpaEntity.getUserJpaEntity().getId(),
-                roomJpaEntity.getRoomCode(),
-                roomJpaEntity.getStatus(),
-                roomJpaEntity.getEndedTime(),
-                roomJpaEntity.getCreatedTime()
-        );
+                .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
+        return toDomain(roomJpaEntity);
     }
 
     @Override
     public void deleteById(Long roomId) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
         roomJpaEntity.endRoom();
     }
 
     @Override
     public Room loadByRoomCode(String roomCode) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findByRoomCode(roomCode)
-                .orElseThrow(()-> new RuntimeException("해당 방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
+        return toDomain(roomJpaEntity);
+    }
+
+    @Override
+    public List<Room> loadRunningRoomsByHostId(Long hostId) {
+        return roomJpaRepository.findAllByUserJpaEntity_IdAndStatus(hostId, RoomStatus.RUNNING)
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    private Room toDomain(RoomJpaEntity roomJpaEntity) {
         return new Room(
                 roomJpaEntity.getId(),
                 roomJpaEntity.getTitle(),
@@ -94,23 +80,4 @@ public class RoomJpaAdapter implements SaveRoomPortOut, UpdateRoomPortOut, LoadR
                 roomJpaEntity.getCreatedTime()
         );
     }
-
-    @Override
-    public List<Room> loadRunningRoomsByHostId(Long hostId) {
-        List<RoomJpaEntity> rooms = roomJpaRepository.findAllByUserJpaEntity_IdAndStatus(hostId, RoomStatus.RUNNING);
-
-
-        return rooms.stream()
-                .map((room)-> new Room(
-                        room.getId(),
-                        room.getTitle(),
-                        room.getUserJpaEntity().getId(),
-                        room.getRoomCode(),
-                        room.getStatus(),
-                        room.getEndedTime(),
-                        room.getCreatedTime()
-                ))
-                .toList();
-    }
 }
-

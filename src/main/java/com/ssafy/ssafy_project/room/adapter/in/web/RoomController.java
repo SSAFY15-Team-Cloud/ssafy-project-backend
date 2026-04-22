@@ -1,25 +1,63 @@
 package com.ssafy.ssafy_project.room.adapter.in.web;
 
+import com.ssafy.ssafy_project.audio.adapter.in.web.dto.CreateAudioRequest;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioQueryPort;
+import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
+import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlCommand;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlPortIn;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlResult;
+import com.ssafy.ssafy_project.report.application.port.in.GetReportPortIn;
+import com.ssafy.ssafy_project.report.application.port.in.GetReportResult;
+import com.ssafy.ssafy_project.report.application.port.in.GetReportStatusPortIn;
+import com.ssafy.ssafy_project.report.application.port.in.GetReportStatusResult;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.request.CreateRoomRequest;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.request.UpdateRoomRequest;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.CreateRoomResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GenerateAudioUploadUrlResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetReportResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetReportStatusResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetRoomAudiosResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetRoomResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.UpdateRoomResponse;
-import com.ssafy.ssafy_project.room.application.port.in.*;
+import com.ssafy.ssafy_project.room.application.port.in.CreateRoomCommand;
+import com.ssafy.ssafy_project.room.application.port.in.CreateRoomPortIn;
+import com.ssafy.ssafy_project.room.application.port.in.CreateRoomResult;
+import com.ssafy.ssafy_project.room.application.port.in.DeleteRoomCommand;
+import com.ssafy.ssafy_project.room.application.port.in.DeleteRoomPortIn;
+import com.ssafy.ssafy_project.room.application.port.in.GetRoomCommand;
+import com.ssafy.ssafy_project.room.application.port.in.GetRoomPortIn;
+import com.ssafy.ssafy_project.room.application.port.in.GetRoomResult;
+import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomCommand;
+import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomPortIn;
+import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomResult;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/rooms")
 public class RoomController {
     private final CreateRoomPortIn createRoomPortIn;
+    private final CreateAudioMetadataPortIn createAudioMetadataPortIn;
+    private final AudioQueryPort audioQueryPort;
     private final UpdateRoomPortIn updateRoomPortIn;
     private final DeleteRoomPortIn deleteRoomPortIn;
     private final GetRoomPortIn getRoomPortIn;
+    private final GenerateAudioUploadUrlPortIn generateAudioUploadUrlPortIn;
+    private final GetReportPortIn getReportPortIn;
+    private final GetReportStatusPortIn getReportStatusPortIn;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -55,16 +93,75 @@ public class RoomController {
     public ResponseEntity<Void> closeRoom(
             @PathVariable Long roomId,
             @AuthenticationPrincipal Long userId
-    ){
+    ) {
         DeleteRoomCommand deleteRoomCommand = new DeleteRoomCommand(roomId, userId);
         deleteRoomPortIn.deleteRoom(deleteRoomCommand);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @PostMapping("/{roomId}/audios")
+    public ResponseEntity<Void> createAudio(
+            @PathVariable Long roomId,
+            @Valid @RequestBody CreateAudioRequest request
+    ) {
+        CreateAudioMetadataCommand command = new CreateAudioMetadataCommand(
+                roomId,
+                request.getSpeakerId(),
+                request.getPath(),
+                request.getMimeType(),
+                request.getDuration(),
+                request.getFileSize(),
+                request.getStartTime(),
+                request.getEndTime()
+        );
+
+        createAudioMetadataPortIn.create(command);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{roomId}/audios")
+    public ResponseEntity<GetRoomAudiosResponse> getRoomAudios(@PathVariable Long roomId) {
+        return ResponseEntity.ok(new GetRoomAudiosResponse(
+                roomId,
+                audioQueryPort.loadAudioIdsByRoomId(roomId)
+        ));
+    }
+
+    @GetMapping("/{roomId}/audios/upload-url")
+    public ResponseEntity<GenerateAudioUploadUrlResponse> generateAudioUploadUrl(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        GenerateAudioUploadUrlResult result = generateAudioUploadUrlPortIn.generateUrl(
+                new GenerateAudioUploadUrlCommand(roomId, userId)
+        );
+
+        return ResponseEntity.ok(new GenerateAudioUploadUrlResponse(result.uploadUrl()));
+    }
+
+    @GetMapping("/{roomId}/report/status")
+    public ResponseEntity<GetReportStatusResponse> getReportStatus(@PathVariable Long roomId) {
+        GetReportStatusResult result = getReportStatusPortIn.getStatus(roomId);
+        return ResponseEntity.ok(new GetReportStatusResponse(result.status()));
+    }
+
+    @GetMapping("/{roomId}/report")
+    public ResponseEntity<GetReportResponse> getReport(@PathVariable Long roomId) {
+        GetReportResult result = getReportPortIn.getReport(roomId);
+        return ResponseEntity.ok(new GetReportResponse(
+                result.reportId(),
+                result.ownerId(),
+                result.roomId(),
+                result.content(),
+                result.createdTime(),
+                result.title()
+        ));
+    }
+
     @GetMapping("/{roomCode}")
     public ResponseEntity<GetRoomResponse> getRoom(
             @PathVariable String roomCode
-    ){
+    ) {
         GetRoomCommand getRoomCommand = new GetRoomCommand(roomCode);
         GetRoomResult getRoomResult = getRoomPortIn.getRoom(getRoomCommand);
 
@@ -78,5 +175,4 @@ public class RoomController {
 
         return ResponseEntity.ok(getRoomResponse);
     }
-
 }
