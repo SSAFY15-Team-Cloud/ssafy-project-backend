@@ -6,6 +6,7 @@ import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.GetParticipantsResult;
 import com.ssafy.ssafy_project.roomparticipant.application.port.in.*;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.CloseUserWebSocketSessionsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.LoadParticipantsPortOut;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.SaveRoomParticipantPortOut;
@@ -16,6 +17,8 @@ import com.ssafy.ssafy_project.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
     private final FindRoomParticipantPortOut findRoomParticipantPortOut;
     private final RoomTerminationProcessor roomTerminationProcessor;
     private final LoadParticipantsPortOut loadParticipantsPortOut;
+    private final CloseUserWebSocketSessionsPortOut closeUserWebSocketSessionsPortOut;
 
     @Transactional
     @Override
@@ -80,10 +84,12 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
             RoomParticipant roomParticipant = found.get();
             if(roomParticipant.getUser().getId().equals(room.getHostId())){
                 roomTerminationProcessor.terminate(room);
+                closeWebSocketAfterCommit(userId);
                 return;
             }
             roomParticipant.leave();
             saveRoomParticipantPortOut.saveRoomParticipant(roomParticipant);
+            closeWebSocketAfterCommit(userId);
         }
 
         if(found.isEmpty()){
@@ -113,5 +119,19 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
         }
 
         return getParticipantsResults;
+    }
+
+    private void closeWebSocketAfterCommit(Long userId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    closeUserWebSocketSessionsPortOut.closeByUserId(userId);
+                }
+            });
+            return;
+        }
+
+        closeUserWebSocketSessionsPortOut.closeByUserId(userId);
     }
 }

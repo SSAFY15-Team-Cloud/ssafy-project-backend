@@ -27,6 +27,7 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 
     private final JwtPortOut jwtPortOut;
     private final FindRoomParticipantPortOut findRoomParticipantPortOut;
+    private final WebSocketSessionRegistry webSocketSessionRegistry;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -43,6 +44,10 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 
         if (StompCommand.SUBSCRIBE.equals(command)) {
             authorizeSubscribe(accessor);
+        }
+
+        if (StompCommand.DISCONNECT.equals(command)) {
+            unregister(accessor);
         }
 
         return message;
@@ -66,6 +71,11 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes != null) {
             sessionAttributes.put(USER_ID_SESSION_KEY, userId);
+        }
+
+        String sessionId = accessor.getSessionId();
+        if (sessionId != null) {
+            webSocketSessionRegistry.bindUser(sessionId, userId);
         }
     }
 
@@ -115,6 +125,13 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
             return null;
         }
         return values.getFirst();
+    }
+
+    private void unregister(StompHeaderAccessor accessor) {
+        String sessionId = accessor.getSessionId();
+        if (sessionId != null) {
+            webSocketSessionRegistry.unregisterSession(sessionId);
+        }
     }
 
     private Long extractRoomId(String destination) {

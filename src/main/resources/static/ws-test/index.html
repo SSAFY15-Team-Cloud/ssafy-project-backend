@@ -244,7 +244,7 @@
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
 
-    const defaultWsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    const defaultWsUrl = `ws://localhost:8081/ws`;
     const defaultDeleteBaseUrl = `${location.protocol}//${location.host}`;
     wsUrlInput.value = defaultWsUrl;
     deleteBaseUrlInput.value = defaultDeleteBaseUrl;
