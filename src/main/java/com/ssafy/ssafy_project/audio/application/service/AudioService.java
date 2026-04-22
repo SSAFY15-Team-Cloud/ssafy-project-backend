@@ -4,10 +4,14 @@ import com.ssafy.ssafy_project.audio.application.event.AudioCreatedEvent;
 import com.ssafy.ssafy_project.audio.application.event.AudioSttCompletedEvent;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPortIn;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlCommand;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlPortIn;
+import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlResult;
 import com.ssafy.ssafy_project.audio.application.port.in.ProcessRoomAudiosPortIn;
 import com.ssafy.ssafy_project.audio.application.port.out.AudioCommandPort;
 import com.ssafy.ssafy_project.audio.application.port.out.AudioFilePortOut;
 import com.ssafy.ssafy_project.audio.application.port.out.AudioQueryPort;
+import com.ssafy.ssafy_project.audio.application.port.out.AudioStoragePortOut;
 import com.ssafy.ssafy_project.audio.application.port.out.AudioTranscriptionPortOut;
 import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
@@ -17,6 +21,7 @@ import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.room.domain.RoomStatus;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -24,26 +29,30 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudiosPortIn {
+public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudiosPortIn, GenerateAudioUploadUrlPortIn {
+
+    private static final String DEFAULT_AUDIO_EXTENSION = ".ogg";
 
     private final AudioCommandPort audioCommandPort;
     private final AudioQueryPort audioQueryPort;
     private final AudioFilePortOut audioFilePortOut;
+    private final AudioStoragePortOut audioStoragePortOut;
     private final AudioTranscriptionPortOut audioTranscriptionPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    @Value("${app.audio.prefix}")
+    private String audioPrefix;
+
     @Override
     @Transactional
     public void create(CreateAudioMetadataCommand command) {
-        Room room = loadRoomPortOut.loadById(command.roomId());
-        if (room.getStatus() == RoomStatus.ENDED) {
-            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
-        }
+        validateRoomIsUploadable(command.roomId());
 
         Audio audio = Audio.builder()
                 .roomId(command.roomId())
@@ -61,6 +70,15 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
 
         Audio saved = audioCommandPort.save(audio);
         applicationEventPublisher.publishEvent(new AudioCreatedEvent(saved.getId(), saved.getRoomId()));
+    }
+
+    @Override
+    public GenerateAudioUploadUrlResult generateUrl(GenerateAudioUploadUrlCommand command) {
+        validateRoomIsUploadable(command.roomId());
+
+        String objectKey = generateAudioObjectKey(command.roomId());
+        String uploadUrl = audioStoragePortOut.generateUploadUrl(objectKey);
+        return new GenerateAudioUploadUrlResult(uploadUrl);
     }
 
     @Override
@@ -97,5 +115,28 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
             audioCommandPort.updateSttStatus(audio.getId(), audio.getSttStatus());
             throw new RuntimeException("audio STT processing failed. audioId=" + audio.getId(), e);
         }
+    }
+
+    private void validateRoomIsUploadable(Long roomId) {
+        Room room = loadRoomPortOut.loadById(roomId);
+        if (room.getStatus() == RoomStatus.ENDED) {
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
+        }
+    }
+
+    private String generateAudioObjectKey(Long roomId) {
+        return normalizePrefix(audioPrefix)
+                + roomId
+                + "/"
+                + UUID.randomUUID()
+                + DEFAULT_AUDIO_EXTENSION;
+    }
+
+    private String normalizePrefix(String prefix) {
+        if (prefix.endsWith("/")) {
+            return prefix;
+        }
+
+        return prefix + "/";
     }
 }

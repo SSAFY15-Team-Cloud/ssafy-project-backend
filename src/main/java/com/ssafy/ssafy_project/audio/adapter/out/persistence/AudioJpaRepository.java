@@ -13,6 +13,8 @@ public interface AudioJpaRepository extends JpaRepository<AudioJpaEntity, Long> 
 
     Optional<AudioJpaEntity> findById(Long id);
 
+    List<AudioJpaEntity> findAllByRoomId(Long roomId);
+
     List<AudioJpaEntity> findAllByRoomIdAndSttStatus(Long roomId, AudioSttStatus sttStatus);
 
     boolean existsByRoomIdAndSttStatusIn(Long roomId, Set<AudioSttStatus> sttStatuses);

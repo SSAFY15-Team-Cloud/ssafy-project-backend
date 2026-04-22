@@ -5,6 +5,8 @@ import com.ssafy.ssafy_project.audio.application.port.out.AudioQueryPort;
 import com.ssafy.ssafy_project.audio.application.port.out.TranscriptSegment;
 import com.ssafy.ssafy_project.audio.domain.Audio;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +46,7 @@ public class AudioPersistenceAdapter implements AudioCommandPort, AudioQueryPort
     @Override
     public void updateSttStatus(Long audioId, AudioSttStatus sttStatus) {
         AudioJpaEntity audioJpaEntity = audioJpaRepository.findById(audioId)
-                .orElseThrow(() -> new IllegalArgumentException("audio not found. id=" + audioId));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.AUDIO_NOT_FOUND));
 
         audioJpaEntity.updateSttStatus(sttStatus);
     }
@@ -63,9 +65,17 @@ public class AudioPersistenceAdapter implements AudioCommandPort, AudioQueryPort
     @Override
     public Audio loadById(Long audioId) {
         AudioJpaEntity audioJpaEntity = audioJpaRepository.findById(audioId)
-                .orElseThrow(() -> new IllegalArgumentException("audio not found. id=" + audioId));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.AUDIO_NOT_FOUND));
 
         return toDomain(audioJpaEntity);
+    }
+
+    @Override
+    public List<Long> loadAudioIdsByRoomId(Long roomId) {
+        return audioJpaRepository.findAllByRoomId(roomId)
+                .stream()
+                .map(AudioJpaEntity::getId)
+                .toList();
     }
 
     @Override

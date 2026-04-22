@@ -6,6 +6,8 @@ import com.ssafy.ssafy_project.report.domain.Report;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class ReportPersistenceAdapter implements ReportCommandPortOut, ReportQueryPortOut {
@@ -40,5 +42,19 @@ public class ReportPersistenceAdapter implements ReportCommandPortOut, ReportQue
     @Override
     public boolean existsByRoomId(Long roomId) {
         return reportJpaRepository.existsByRoomId(roomId);
+    }
+
+    @Override
+    public Optional<Report> findByRoomId(Long roomId) {
+        return reportJpaRepository.findByRoomId(roomId)
+                .map(entity -> Report.builder()
+                        .id(entity.getId())
+                        .ownerId(entity.getOwnerId())
+                        .roomId(entity.getRoomId())
+                        .content(entity.getContent())
+                        .createdTime(entity.getCreatedTime())
+                        .title(entity.getTitle())
+                        .status(entity.isStatus())
+                        .build());
     }
 }

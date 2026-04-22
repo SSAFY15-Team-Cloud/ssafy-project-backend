@@ -34,14 +34,17 @@ public class ReportGenerationService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateIfReady(Long roomId) {
-        if (reportQueryPortOut.existsByRoomId(roomId)) {
-            log.debug("Report already exists. roomId={}", roomId);
-            return;
-        }
-
         Room room = loadRoomPortOut.loadById(roomId);
         if (room.getStatus() != RoomStatus.ENDED) {
             log.debug("Room is not ended yet. roomId={}, status={}", roomId, room.getStatus());
+            return;
+        }
+
+        Report report = reportQueryPortOut.findByRoomId(roomId)
+                .orElseGet(() -> createPendingReport(room));
+
+        if (report.isStatus()) {
+            log.debug("Report already completed. roomId={}", roomId);
             return;
         }
 
@@ -58,22 +61,36 @@ public class ReportGenerationService {
                 ? EMPTY_TRANSCRIPT_CONTENT
                 : meetingSummaryPortOut.summarizeMeeting(room.getTitle(), transcriptSegments);
 
-        Report report = Report.builder()
-                .ownerId(room.getHostId())
+        Report completedReport = Report.builder()
+                .id(report.getId())
+                .ownerId(report.getOwnerId())
                 .roomId(roomId)
                 .content(content)
-                .createdTime(LocalDateTime.now())
+                .createdTime(report.getCreatedTime())
                 .title(room.getTitle())
                 .status(true)
                 .build();
 
-
-
         try {
-            reportCommandPortOut.save(report);
+            reportCommandPortOut.save(completedReport);
             log.info("Report generated. roomId={}, contentLength={}", roomId, content.length());
         } catch (DataIntegrityViolationException e) {
             log.info("Report creation skipped because another transaction already created it. roomId={}", roomId);
         }
+    }
+
+    private Report createPendingReport(Room room) {
+        Report pendingReport = Report.builder()
+                .ownerId(room.getHostId())
+                .roomId(room.getId())
+                .content(null)
+                .createdTime(LocalDateTime.now())
+                .title(null)
+                .status(false)
+                .build();
+
+        Report saved = reportCommandPortOut.save(pendingReport);
+        log.info("Pending report created. roomId={}", room.getId());
+        return saved;
     }
 }

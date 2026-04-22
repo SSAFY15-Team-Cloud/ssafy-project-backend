@@ -6,6 +6,8 @@ import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioTextJpaEntity;
 import com.ssafy.ssafy_project.audio.adapter.out.persistence.AudioTextJpaRepository;
 import com.ssafy.ssafy_project.audio.application.event.AudioSttCompletedEvent;
 import com.ssafy.ssafy_project.audio.domain.AudioSttStatus;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.global.infrastructure.openai.OpenAiWhisperClient;
 import com.ssafy.ssafy_project.global.infrastructure.s3.AudioS3Downloader;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,7 @@ public class AudioSttWorkerService {
     @Transactional
     public void processSingleAudioById(Long audioId) {
         AudioJpaEntity audio = audioJpaRepository.findById(audioId)
-                .orElseThrow(() -> new IllegalArgumentException("audio not found. id=" + audioId));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.AUDIO_NOT_FOUND));
 
         if (audio.getSttStatus() == AudioSttStatus.DONE) {
             log.info("Audio is already DONE. audioId={}", audioId);

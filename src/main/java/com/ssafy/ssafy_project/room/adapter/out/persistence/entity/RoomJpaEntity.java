@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Table(name="room")
+@Table(name="rooms")
 @NoArgsConstructor
 public class RoomJpaEntity {
     @Id

@@ -8,6 +8,8 @@ public interface AudioQueryPort {
 
     Audio loadById(Long audioId);
 
+    List<Long> loadAudioIdsByRoomId(Long roomId);
+
     List<Audio> loadPendingByRoomId(Long roomId);
 
     boolean existsUnfinishedByRoomId(Long roomId);
