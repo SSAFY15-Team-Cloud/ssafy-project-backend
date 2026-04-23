@@ -1,12 +1,12 @@
 package com.ssafy.ssafy_project.notification.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class Notification {
     private final Long id;
     private NotificationType type;
