@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface NotificationJpaRepository extends JpaRepository<NotificationJpaEntity, Long> {
-    List<NotificationJpaEntity> findAllByToIdOrderByCreatedTimeDesc(Long toId);
+    List<NotificationJpaEntity> findAllByToUser_IdOrderByCreatedTimeDesc(Long toId);
 
-    List<NotificationJpaEntity> findAllByToIdAndReadAtIsNullOrderByCreatedTimeDesc(Long toId);
+    List<NotificationJpaEntity> findAllByToUser_IdAndReadAtIsNullOrderByCreatedTimeDesc(Long toId);
 
-    long countByToIdAndReadAtIsNull(Long toId);
+    long countByToUser_IdAndReadAtIsNull(Long toId);
 
-    Optional<NotificationJpaEntity> findByIdAndToId(Long id, Long toId);
+    Optional<NotificationJpaEntity> findByIdAndToUser_Id(Long id, Long toId);
 }

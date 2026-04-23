@@ -33,15 +33,15 @@ public class NotificationJpaEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_id", nullable = false)
-    private UserJpaEntity toId;
+    private UserJpaEntity toUser;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_id")
-    private UserJpaEntity fromId;
+    private UserJpaEntity fromUser;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
-    private RoomJpaEntity roomId;
+    private RoomJpaEntity room;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "report_id")
@@ -54,19 +54,13 @@ public class NotificationJpaEntity {
     @CreationTimestamp
     private LocalDateTime createdTime;
 
-    public NotificationJpaEntity(NotificationType notificationType, UserJpaEntity toId, UserJpaEntity fromId, String content, RoomJpaEntity roomId, String roomCode) {
-        this.notificationType = notificationType;
-        this.toId = toId;
-        this.fromId = fromId;
-        this.content = content;
-        this.roomId = roomId;
-        this.roomCode = roomCode;
-    }
-
-    public NotificationJpaEntity(NotificationType notificationType, String content, UserJpaEntity toId, Long reportId) {
+    public NotificationJpaEntity(NotificationType notificationType, String content, UserJpaEntity toUser, UserJpaEntity fromUser, RoomJpaEntity room, Long reportId, String roomCode) {
         this.notificationType = notificationType;
         this.content = content;
-        this.toId = toId;
+        this.toUser = toUser;
+        this.fromUser = fromUser;
+        this.room = room;
         this.reportId = reportId;
+        this.roomCode = roomCode;
     }
 }
