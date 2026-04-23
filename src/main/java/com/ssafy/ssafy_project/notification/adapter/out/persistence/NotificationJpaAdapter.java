@@ -7,6 +7,8 @@ import com.ssafy.ssafy_project.notification.application.port.out.LoadNotificatio
 import com.ssafy.ssafy_project.notification.application.port.out.SaveNotificationPortOut;
 import com.ssafy.ssafy_project.notification.application.port.out.UpdateNotificationPortOut;
 import com.ssafy.ssafy_project.notification.domain.Notification;
+import com.ssafy.ssafy_project.report.adapter.out.persistence.ReportJpaEntity;
+import com.ssafy.ssafy_project.report.adapter.out.persistence.ReportJpaRepository;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
@@ -24,36 +26,45 @@ public class NotificationJpaAdapter implements SaveNotificationPortOut, LoadNoti
 
     private final UserJpaRepository userJpaRepository;
     private final RoomJpaRepository roomJpaRepository;
+    private final ReportJpaRepository reportJpaRepository;
     private final NotificationJpaRepository notificationJpaRepository;
 
     @Override
-    public void delete(Notification notification) {
-
+    public void deleteById(Long notificationId) {
+        notificationJpaRepository.deleteById(notificationId);
     }
 
     @Override
     public List<Notification> loadAllByToId(Long toId) {
-        return List.of();
+        return notificationJpaRepository.findAllByToUser_IdOrderByCreatedTimeDesc(toId)
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
     public List<Notification> loadUnreadByToId(Long toId) {
-        return List.of();
+        return notificationJpaRepository.findAllByToUser_IdAndReadAtIsNullOrderByCreatedTimeDesc(toId)
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
     public long countUnreadByToId(Long toId) {
-        return 0;
+        return notificationJpaRepository.countByToUser_IdAndReadAtIsNull(toId);
     }
 
     @Override
     public Optional<Notification> loadByIdAndToId(Long notificationId, Long toId) {
-        return Optional.empty();
+        return notificationJpaRepository.findByIdAndToUser_Id(notificationId, toId)
+                .map(this::toDomain);
     }
 
     @Override
     public Notification save(Notification notification) {
         UserJpaEntity toUser = userJpaRepository.getReferenceById(notification.getToId());
+
         UserJpaEntity fromUser = null;
         if(notification.getFromId() != null) {
             fromUser = userJpaRepository.getReferenceById(notification.getFromId());
@@ -64,6 +75,11 @@ public class NotificationJpaAdapter implements SaveNotificationPortOut, LoadNoti
             room = roomJpaRepository.getReferenceById(notification.getRoomId());
         }
 
+        ReportJpaEntity report = null;
+        if(notification.getReportId() != null) {
+            report = reportJpaRepository.getReferenceById(notification.getReportId());
+        }
+
         NotificationJpaEntity notificationJpaEntity = notificationJpaRepository.save(
                 new NotificationJpaEntity(
                     notification.getType(),
@@ -71,7 +87,7 @@ public class NotificationJpaAdapter implements SaveNotificationPortOut, LoadNoti
                         toUser,
                         fromUser,
                         room,
-                        notification.getReportId(),
+                        report,
                         notification.getRoomCode()
                 )
         );
@@ -81,12 +97,15 @@ public class NotificationJpaAdapter implements SaveNotificationPortOut, LoadNoti
 
     @Override
     public void markAsRead(Long notificationId, Long toId, LocalDateTime readAt) {
+        NotificationJpaEntity notificationJpaEntity = notificationJpaRepository.findByIdAndToUser_Id(notificationId, toId)
+                .orElseThrow(() -> new RuntimeException("알림을 찾을 수 없습니다."));
 
+        notificationJpaEntity.markAsRead(readAt);
     }
 
     @Override
     public void markAllAsRead(Long toId, LocalDateTime readAt) {
-
+        notificationJpaRepository.markAllAsRead(toId, readAt);
     }
 
     public Notification toDomain(NotificationJpaEntity notificationJpaEntity) {
@@ -96,10 +115,10 @@ public class NotificationJpaAdapter implements SaveNotificationPortOut, LoadNoti
                 notificationJpaEntity.getReadAt(),
                 notificationJpaEntity.getContent(),
                 notificationJpaEntity.getToUser().getId(),
-                notificationJpaEntity.getFromUser().getId(),
+                notificationJpaEntity.getFromUser() != null ? notificationJpaEntity.getFromUser().getId() : null,
                 notificationJpaEntity.getCreatedTime(),
-                notificationJpaEntity.getRoom().getId(),
-                notificationJpaEntity.getReportId(),
+                notificationJpaEntity.getRoom() != null ? notificationJpaEntity.getRoom().getId() : null,
+                notificationJpaEntity.getReport() != null ? notificationJpaEntity.getReport().getId() : null,
                 notificationJpaEntity.getRoomCode()
         );
     }

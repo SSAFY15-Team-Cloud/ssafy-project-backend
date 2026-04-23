@@ -1,6 +1,7 @@
 package com.ssafy.ssafy_project.notification.adapter.out.persistence.entity;
 
 import com.ssafy.ssafy_project.notification.domain.NotificationType;
+import com.ssafy.ssafy_project.report.adapter.out.persistence.ReportJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import jakarta.persistence.*;
@@ -45,7 +46,7 @@ public class NotificationJpaEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "report_id")
-    private Long reportId;
+    private ReportJpaEntity report;
 
     @Column(name="room_code")
     private String roomCode;
@@ -54,13 +55,19 @@ public class NotificationJpaEntity {
     @CreationTimestamp
     private LocalDateTime createdTime;
 
-    public NotificationJpaEntity(NotificationType notificationType, String content, UserJpaEntity toUser, UserJpaEntity fromUser, RoomJpaEntity room, Long reportId, String roomCode) {
+    public NotificationJpaEntity(NotificationType notificationType, String content, UserJpaEntity toUser, UserJpaEntity fromUser, RoomJpaEntity room, ReportJpaEntity report, String roomCode) {
         this.notificationType = notificationType;
         this.content = content;
         this.toUser = toUser;
         this.fromUser = fromUser;
         this.room = room;
-        this.reportId = reportId;
+        this.report = report;
         this.roomCode = roomCode;
+    }
+
+    public void markAsRead(LocalDateTime readAt) {
+        if (this.readAt == null) {
+            this.readAt = readAt;
+        }
     }
 }
