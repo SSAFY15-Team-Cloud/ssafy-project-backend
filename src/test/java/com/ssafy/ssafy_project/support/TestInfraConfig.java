@@ -38,7 +38,7 @@ public class TestInfraConfig {
         return new InMemoryProfileImageStoragePortOut();
     }
 
-    @Bean
+    @Bean(name = "testObjectMapper")
     ObjectMapper objectMapper() {
         return new ObjectMapper();
     }
