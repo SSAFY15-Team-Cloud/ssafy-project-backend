@@ -23,7 +23,7 @@ public class NotificationService implements GetNotificationPortIn, ReadNotificat
 
     @Override
     public List<GetNotificationResult> getNotifications(GetNotificationCommand command) {
-        if(command.unreadOnly()) {
+        if(!command.isRead()) {
             return loadNotificationPortOut.loadUnreadByToId(command.userId())
                     .stream()
                     .map(this::toGetNotificationResult)
