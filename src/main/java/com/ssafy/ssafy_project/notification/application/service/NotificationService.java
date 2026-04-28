@@ -71,6 +71,21 @@ public class NotificationService implements GetNotificationPortIn, ReadNotificat
         deleteNotificationPortOut.deleteById(command.notificationId());
     }
 
+    private void validate(Notification notification) {
+        switch (notification.getType()) {
+            case MEETING_INVITE -> {
+                if (notification.getRoomId() == null || notification.getRoomCode() == null) {
+                    throw new RuntimeException("초대 알림에는 room 정보가 필요합니다.");
+                }
+            }
+            case REPORT_DONE -> {
+                if (notification.getReportId() == null) {
+                    throw new RuntimeException("리포트 완료 알림에는 reportId가 필요합니다.");
+                }
+            }
+        }
+    }
+
     private GetNotificationResult toGetNotificationResult(Notification notification) {
         NotificationPayload payload = switch (notification.getType()) {
             case MEETING_INVITE -> new MeetingInvitePayload(
