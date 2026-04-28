@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.notification.application.service;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.notification.application.port.in.*;
 import com.ssafy.ssafy_project.notification.application.port.out.DeleteNotificationPortOut;
 import com.ssafy.ssafy_project.notification.application.port.out.LoadNotificationPortOut;
@@ -40,7 +42,7 @@ public class NotificationService implements GetNotificationPortIn, ReadNotificat
     @Override
     public void read(ReadNotificationCommand command) {
         Notification notification = loadNotificationPortOut.loadByIdAndToId(command.notificationId(), command.userId())
-                .orElseThrow(() -> new RuntimeException("알림 없음"));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.NOTIFICATION_NOT_FOUND));
 
         if(notification.isRead()) {
             return;
@@ -66,27 +68,14 @@ public class NotificationService implements GetNotificationPortIn, ReadNotificat
         loadNotificationPortOut.loadByIdAndToId(
                 command.notificationId(),
                 command.userId()
-        ).orElseThrow(()-> new RuntimeException("알림 없음"));
+        ).orElseThrow(()-> new CustomException(CommonErrorCode.NOTIFICATION_NOT_FOUND));
 
         deleteNotificationPortOut.deleteById(command.notificationId());
     }
 
-    private void validate(Notification notification) {
-        switch (notification.getType()) {
-            case MEETING_INVITE -> {
-                if (notification.getRoomId() == null || notification.getRoomCode() == null) {
-                    throw new RuntimeException("초대 알림에는 room 정보가 필요합니다.");
-                }
-            }
-            case REPORT_DONE -> {
-                if (notification.getReportId() == null) {
-                    throw new RuntimeException("리포트 완료 알림에는 reportId가 필요합니다.");
-                }
-            }
-        }
-    }
-
     private GetNotificationResult toGetNotificationResult(Notification notification) {
+        validateNotificationPayload(notification);
+
         NotificationPayload payload = switch (notification.getType()) {
             case MEETING_INVITE -> new MeetingInvitePayload(
                     notification.getRoomId(),
@@ -105,5 +94,20 @@ public class NotificationService implements GetNotificationPortIn, ReadNotificat
                 notification.isRead(),
                 payload
         );
+    }
+
+    private void validateNotificationPayload(Notification notification) {
+        switch (notification.getType()) {
+            case MEETING_INVITE -> {
+                if (notification.getRoomId() == null || notification.getRoomCode() == null) {
+                    throw new CustomException(CommonErrorCode.INVALID_NOTIFICATION_PAYLOAD);
+                }
+            }
+            case REPORT_DONE -> {
+                if (notification.getReportId() == null) {
+                    throw new CustomException(CommonErrorCode.INVALID_NOTIFICATION_PAYLOAD);
+                }
+            }
+        }
     }
 }

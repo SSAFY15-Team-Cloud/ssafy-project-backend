@@ -13,7 +13,11 @@ public enum CommonErrorCode implements ErrorCode {
     AUDIO_NOT_FOUND(HttpStatus.NOT_FOUND, "40410", "Audio not found."),
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "40411", "Room not found."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "40412", "Report not found."),
-    ROOM_ALREADY_ENDED(HttpStatus.CONFLICT, "40910", "Cannot create audio metadata for an ended room.");
+    ROOM_ALREADY_ENDED(HttpStatus.CONFLICT, "40910", "Cannot create audio metadata for an ended room."),
+
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "40420", "Notification not found."),
+    INVALID_NOTIFICATION_PAYLOAD(HttpStatus.BAD_REQUEST, "40020", "Invalid notification payload."),
+    UNSUPPORTED_NOTIFICATION_TYPE(HttpStatus.BAD_REQUEST, "40021", "Unsupported notification type.");
 
     private final HttpStatus statusCode;
     private final String errorCode;
