@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.roomparticipant.application.service;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.application.service.RoomTerminationProcessor;
 import com.ssafy.ssafy_project.room.domain.Room;
@@ -43,7 +45,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
         Room room = loadRoomPortOut.loadByRoomCode(roomCode);
 
         if(room.getStatus().equals(RoomStatus.ENDED)){
-            throw new RuntimeException("이미 종료된 방입니다.");
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
         }
 
 
@@ -93,7 +95,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
         }
 
         if(found.isEmpty()){
-            throw new RuntimeException("방의 참가자가 아닙니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
         }
     }
 
@@ -115,7 +117,7 @@ public class RoomParticipantService implements SaveRoomParticipantPortIn, LeaveR
                     .toList();
         }
         if(!isActiveParticipant){
-            throw new RuntimeException("방의 참가자만 다른 참가자들을 조회할 수 있습니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
         }
 
         return getParticipantsResults;

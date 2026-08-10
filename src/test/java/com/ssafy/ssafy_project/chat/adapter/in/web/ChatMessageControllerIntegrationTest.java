@@ -4,13 +4,11 @@ import com.ssafy.ssafy_project.chat.adapter.out.persistence.entity.ChatMessageJp
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
-import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -57,16 +55,15 @@ class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupp
     }
 
     @Test
-    void getMessages_fails_for_non_participant() {
+    void getMessages_fails_for_non_participant() throws Exception {
         UserJpaEntity owner = saveUser("chat-owner2@test.com", "password123!", "owner2", "Owner2");
         UserJpaEntity outsider = saveUser("chat-outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Chat Guard Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/room/{roomId}/messages", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Request processing failed");
+        mockMvc.perform(get("/api/room/{roomId}/messages", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("40311"));
     }
 
     @Test
@@ -93,7 +90,7 @@ class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupp
     }
 
     @Test
-    void deleteMessage_fails_for_non_author() {
+    void deleteMessage_fails_for_non_author() throws Exception {
         UserJpaEntity owner = saveUser("chat-owner5@test.com", "password123!", "owner5", "Owner5");
         UserJpaEntity otherUser = saveUser("chat-other@test.com", "password123!", "other", "Other");
         RoomJpaEntity room = saveRoom("Delete Guard Room", owner);
@@ -101,10 +98,9 @@ class ChatMessageControllerIntegrationTest extends ControllerIntegrationTestSupp
                 new ChatMessageJpaEntity("owner5", "protected", room, owner)
         );
 
-        assertThatThrownBy(() -> mockMvc.perform(delete("/api/messages/{messageId}", savedMessage.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(otherUser.getId()))))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Request processing failed");
+        mockMvc.perform(delete("/api/messages/{messageId}", savedMessage.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(otherUser.getId())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("40312"));
     }
 }

@@ -11,8 +11,12 @@ public record S3Properties(
 ) {
     public record S3(
             String bucket,
-            Long presignedUrlExpirationSeconds
+            Long presignedUrlExpirationSeconds,
+            String endpoint
     ) {
+        public boolean hasEndpointOverride() {
+            return endpoint != null && !endpoint.isBlank();
+        }
     }
 
     public record Region(

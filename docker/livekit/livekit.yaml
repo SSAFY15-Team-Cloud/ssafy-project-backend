@@ -1,0 +1,10 @@
+# 로컬 개발용 LiveKit 설정. 시크릿은 jjwt HS256 최소 키 길이(32바이트) 충족 필요.
+port: 7880
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  use_external_ip: false
+keys:
+  devkey: wJqzX0m8Qf3tR7vY2sN5uB9cD4eG6hK1
+logging:
+  level: info

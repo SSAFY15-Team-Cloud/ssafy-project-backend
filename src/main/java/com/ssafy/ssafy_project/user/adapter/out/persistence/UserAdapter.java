@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.user.adapter.out.persistence;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.repository.UserJpaRepository;
 import com.ssafy.ssafy_project.user.application.port.out.LoadUserPortOut;
@@ -18,7 +20,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public User loadByEmail(String email) {
         UserJpaEntity userJpaEntity = userJpaRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         return toDomain(userJpaEntity);
     }
@@ -51,7 +53,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public User loadById(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         return toDomain(userJpaEntity);
     }
@@ -72,7 +74,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public void updateNickname(Long userId, String nickname) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         userJpaEntity.updateNickname(nickname);
     }
@@ -80,7 +82,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public void changePassword(Long userId, String password) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         userJpaEntity.changePassword(password);
     }
@@ -88,7 +90,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public void changeProfileImage(Long userId, String objectKey) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         userJpaEntity.changeProfileImageKey(objectKey);
     }
@@ -96,7 +98,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public void withdraw(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         userJpaEntity.softDelete();
     }
@@ -104,7 +106,7 @@ public class UserAdapter implements LoadUserPortOut, RegisterUserPortOut, Update
     @Override
     public void deleteProfileImage(Long userId) {
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         userJpaEntity.deleteProfileImageKey();
     }

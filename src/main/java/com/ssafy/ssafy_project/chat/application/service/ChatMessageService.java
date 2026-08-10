@@ -10,6 +10,8 @@ import com.ssafy.ssafy_project.chat.application.port.out.LoadMessagePortOut;
 import com.ssafy.ssafy_project.chat.application.port.out.PublishDeletedChatMessagePortOut;
 import com.ssafy.ssafy_project.chat.application.port.out.PublishChatMessagePortOut;
 import com.ssafy.ssafy_project.chat.domain.ChatMessage;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
@@ -47,7 +49,7 @@ public class ChatMessageService implements CreateMessagePortIn, DeleteMessagePor
         User user = loadUserPortOut.loadById(userId);
         boolean isActiveParticipant = findRoomParticipantPortOut.existsByRoom_IdAndUser_IdAndIsActiveTrue(roomId, userId);
         if(!isActiveParticipant){
-            throw new RuntimeException("방의 참가자만 채팅할 수 있습니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
         }
         ChatMessage chatMessage = new ChatMessage(room, user, user.getNickname(), message);
 
@@ -71,7 +73,7 @@ public class ChatMessageService implements CreateMessagePortIn, DeleteMessagePor
         Long loginUserId = deleteMessageCommand.userId();
         ChatMessage targetMessage = loadMessagePortOut.findByMessageId(messageId);
         if(!targetMessage.getUser().getId().equals(loginUserId)){
-            throw new RuntimeException("작성자만 삭제할 수 있습니다.");
+            throw new CustomException(CommonErrorCode.NOT_MESSAGE_AUTHOR);
         }
         targetMessage.deleteMessage();
         deleteMessagePortOut.deleteMessage(targetMessage);
@@ -91,7 +93,7 @@ public class ChatMessageService implements CreateMessagePortIn, DeleteMessagePor
         boolean isActiveParticipant = findRoomParticipantPortOut.existsByRoom_IdAndUser_IdAndIsActiveTrue(roomId, userId);
 
         if(!isActiveParticipant){
-            throw new RuntimeException("방의 참가자만 조회가 가능합니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
         }
 
         List<ChatMessage> chatMessages = getMessagesPortOut.getMessages(roomId);

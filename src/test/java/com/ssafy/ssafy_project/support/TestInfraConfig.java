@@ -9,6 +9,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,10 @@ public class TestInfraConfig {
     @ServiceConnection
     @ConditionalOnProperty(name = "test.use-testcontainers", havingValue = "true", matchIfMissing = true)
     PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>("postgres:16-alpine");
+        // knowledge 도메인의 pgvector 확장을 위해 pgvector 이미지 사용
+        return new PostgreSQLContainer<>(
+                DockerImageName.parse("pgvector/pgvector:pg16").asCompatibleSubstituteFor("postgres")
+        );
     }
 
     @Bean

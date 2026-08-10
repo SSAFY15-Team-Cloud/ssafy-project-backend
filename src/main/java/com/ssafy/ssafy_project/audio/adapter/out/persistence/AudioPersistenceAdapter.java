@@ -88,9 +88,10 @@ public class AudioPersistenceAdapter implements AudioCommandPort, AudioQueryPort
 
     @Override
     public boolean existsUnfinishedByRoomId(Long roomId) {
+        // FAILED는 재시도 대상이 아니므로 리포트 생성을 막지 않는다 (포함하면 리포트가 영원히 생성되지 않음)
         return audioJpaRepository.existsByRoomIdAndSttStatusIn(
                 roomId,
-                Set.of(AudioSttStatus.PENDING, AudioSttStatus.PROCESSING, AudioSttStatus.FAILED)
+                Set.of(AudioSttStatus.PENDING, AudioSttStatus.PROCESSING)
         );
     }
 

@@ -16,21 +16,16 @@ import java.net.URI;
 public class AudioS3Downloader implements AudioFilePortOut {
 
     private final S3Client s3Client;
-
-    @Value("${app.profile-image.base-url}")
-    private String baseUrl;
+    private final S3Properties s3Properties;
 
     @Value("${app.audio.prefix}")
     private String audioPrefix;
 
     @Override
     public byte[] downloadAudio(String fullPath) {
-        String bucket = extractBucketName();
-        String key = extractKey(fullPath);
-
         GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
+                .bucket(s3Properties.s3().bucket())
+                .key(extractKey(fullPath))
                 .build();
 
         ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
@@ -44,21 +39,17 @@ public class AudioS3Downloader implements AudioFilePortOut {
         return idx >= 0 ? key.substring(idx + 1) : key;
     }
 
-    private String extractBucketName() {
-        URI uri = URI.create(baseUrl);
-        String host = uri.getHost();
-        int idx = host.indexOf(".s3.");
-        if (idx < 0) {
-            throw new IllegalStateException("S3 bucket host format is invalid: " + host);
-        }
-        return host.substring(0, idx);
-    }
-
+    // virtual-hosted(https://bucket.s3.../key)와 path-style(http://host/bucket/key) URL 모두 지원
     private String extractKey(String fullPath) {
         URI uri = URI.create(fullPath);
         String key = uri.getPath();
         if (key.startsWith("/")) {
             key = key.substring(1);
+        }
+
+        String bucketSegment = s3Properties.s3().bucket() + "/";
+        if (key.startsWith(bucketSegment)) {
+            key = key.substring(bucketSegment.length());
         }
 
         if (!key.startsWith(audioPrefix)) {

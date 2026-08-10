@@ -2,6 +2,8 @@ package com.ssafy.ssafy_project.user.application.service;
 
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.global.domain.entity.TokenType;
 import com.ssafy.ssafy_project.global.domain.entity.Tokens;
 import com.ssafy.ssafy_project.user.application.port.in.*;
@@ -29,11 +31,11 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
         User user = loadUserPortOut.loadByEmail(email);
 
         if(user.isDeleted()) {
-            throw new IllegalArgumentException("삭제된 사용자 입니다.");
+            throw new CustomException(CommonErrorCode.INVALID_CREDENTIALS);
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(CommonErrorCode.INVALID_CREDENTIALS);
         }
 
         return jwtPortOut.generate(user.getId());
@@ -58,13 +60,13 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
     @Transactional
     public Tokens reissue(String refreshToken) {
         if (!jwtPortOut.validate(refreshToken, TokenType.REFRESH_TOKEN)) {
-            throw new IllegalArgumentException("올바르지 않은 토큰");
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
         }
 
         Long userId = jwtPortOut.extractUserId(refreshToken);
 
         if (!jwtPortOut.matchesRefreshToken(userId, refreshToken)) {
-            throw new IllegalArgumentException("올바르지 않은 토큰");
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
         }
 
 
@@ -75,11 +77,11 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
     @Transactional
     public Long signUp(SignUpCommand command) {
         if (loadUserPortOut.existsByEmail(command.email())) {
-            throw new IllegalArgumentException("이미 존재하는 이메일");
+            throw new CustomException(CommonErrorCode.DUPLICATE_EMAIL);
         }
 
         if(loadUserPortOut.existsActiveByNickname(command.nickname())) {
-            throw new RuntimeException("이미 존재하는 닉네임");
+            throw new CustomException(CommonErrorCode.DUPLICATE_NICKNAME);
         }
 
         String encodedPassword = passwordEncoder.encode(command.password());
@@ -93,8 +95,6 @@ public class AuthService implements LoginPortIn, SignUpPortIn, LogoutPortIn, Ref
                 null
         );
 
-        registerUserPortOut.registerUser(user);
-
-        return user.getId();
+        return registerUserPortOut.registerUser(user).getId();
     }
 }

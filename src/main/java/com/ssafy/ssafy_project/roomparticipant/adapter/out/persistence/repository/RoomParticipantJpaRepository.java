@@ -26,6 +26,8 @@ public interface RoomParticipantJpaRepository extends JpaRepository<RoomParticip
 
     boolean existsByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(Long roomId, Long userId);
 
+    boolean existsByRoomJpaEntity_IdAndUserJpaEntity_Id(Long roomId, Long userId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
           UPDATE room_participants

@@ -2,8 +2,11 @@ package com.ssafy.ssafy_project.global.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @Slf4j
 @RestControllerAdvice
@@ -16,6 +19,19 @@ public class GlobalCustomExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(ErrorResponse.from(errorCode));
+    }
+
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            HandlerMethodValidationException.class,
+            HttpMessageNotReadableException.class
+    })
+    public ResponseEntity<ErrorResponse> handleValidationException(Exception e) {
+        log.debug("Request validation failed.", e);
+
+        return ResponseEntity
+                .status(CommonErrorCode.VALIDATION_ERROR.getStatusCode())
+                .body(ErrorResponse.from(CommonErrorCode.VALIDATION_ERROR));
     }
 
     @ExceptionHandler(Exception.class)

@@ -12,4 +12,6 @@ public interface FindRoomParticipantPortOut {
     Optional<RoomParticipant> findByRoomAndUserAndIsActiveTrue(Room room, User user);
 
     boolean existsByRoom_IdAndUser_IdAndIsActiveTrue(Long roomId, Long userId);
+
+    boolean existsByRoomIdAndUserId(Long roomId, Long userId);
 }

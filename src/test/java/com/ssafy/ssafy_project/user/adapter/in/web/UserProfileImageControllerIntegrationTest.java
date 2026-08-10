@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -78,8 +77,7 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
     void changeUserProfileImage_rejects_other_users_object_key() throws Exception {
         UserJpaEntity user = saveUser("profile-invalid@test.com", "password123!", "profile-invalid", "Profile Invalid");
 
-        assertThatThrownBy(() ->
-                mockMvc.perform(post("/api/users/me/profile-image")
+        mockMvc.perform(post("/api/users/me/profile-image")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -87,7 +85,8 @@ public class UserProfileImageControllerIntegrationTest extends ControllerIntegra
                             "objectKey": "%s/999/test-image.jpg"
                           }
                           """.formatted(profileImageProperties.prefix())))
-        ).hasRootCauseInstanceOf(RuntimeException.class);
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("40012"));
     }
 
     @Test

@@ -64,11 +64,9 @@ node_modules/
 *.mv.db
 *.trace.db
 
-src/main/resources/application.properties
-/Dockerfile
-/docker-compose.yml
-/.dockerignore
 /.gitmessage.txt
-src/test/resources/application-test.properties
 hyuncheol
-src/main/resources/application.properties
+
+# local secrets (never commit)
+src/main/resources/secrets.properties
+src/test/resources/sample-meeting-audio.ogg

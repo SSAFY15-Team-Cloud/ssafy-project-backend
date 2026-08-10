@@ -1,19 +1,16 @@
 package com.ssafy.ssafy_project.audio.adapter.in.web.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
 public class CreateAudioRequest {
 
-    @NotNull
-    private Long speakerId;
+    // speakerId는 인증 주체(@AuthenticationPrincipal)에서 얻는다 — 요청 바디로 받지 않는다
 
     @NotBlank
     private String path;

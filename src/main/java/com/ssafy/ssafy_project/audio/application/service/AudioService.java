@@ -21,6 +21,7 @@ import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
 import com.ssafy.ssafy_project.room.domain.Room;
 import com.ssafy.ssafy_project.room.domain.RoomStatus;
+import com.ssafy.ssafy_project.roomparticipant.application.port.out.FindRoomParticipantPortOut;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +38,7 @@ import java.util.UUID;
 public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudiosPortIn, GenerateAudioUploadUrlPortIn {
 
     private static final String DEFAULT_AUDIO_EXTENSION = ".ogg";
+    private static final List<String> ALLOWED_AUDIO_EXTENSIONS = List.of("ogg", "webm", "mp3", "wav", "m4a");
 
     private final AudioCommandPort audioCommandPort;
     private final AudioQueryPort audioQueryPort;
@@ -44,6 +46,7 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
     private final AudioStoragePortOut audioStoragePortOut;
     private final AudioTranscriptionPortOut audioTranscriptionPortOut;
     private final LoadRoomPortOut loadRoomPortOut;
+    private final FindRoomParticipantPortOut findRoomParticipantPortOut;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${app.audio.prefix}")
@@ -53,6 +56,7 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
     @Transactional
     public void create(CreateAudioMetadataCommand command) {
         validateRoomIsUploadable(command.roomId());
+        validateActiveParticipant(command.roomId(), command.speakerId());
 
         Audio audio = Audio.builder()
                 .roomId(command.roomId())
@@ -75,8 +79,9 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
     @Override
     public GenerateAudioUploadUrlResult generateUrl(GenerateAudioUploadUrlCommand command) {
         validateRoomIsUploadable(command.roomId());
+        validateActiveParticipant(command.roomId(), command.userId());
 
-        String objectKey = generateAudioObjectKey(command.roomId());
+        String objectKey = generateAudioObjectKey(command.roomId(), resolveExtension(command.extension()));
         String uploadUrl = audioStoragePortOut.generateUploadUrl(objectKey);
         return new GenerateAudioUploadUrlResult(uploadUrl);
     }
@@ -124,12 +129,29 @@ public class AudioService implements CreateAudioMetadataPortIn, ProcessRoomAudio
         }
     }
 
-    private String generateAudioObjectKey(Long roomId) {
+    private void validateActiveParticipant(Long roomId, Long userId) {
+        if (!findRoomParticipantPortOut.existsByRoom_IdAndUser_IdAndIsActiveTrue(roomId, userId)) {
+            throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
+        }
+    }
+
+    private String generateAudioObjectKey(Long roomId, String extension) {
         return normalizePrefix(audioPrefix)
                 + roomId
                 + "/"
                 + UUID.randomUUID()
-                + DEFAULT_AUDIO_EXTENSION;
+                + extension;
+    }
+
+    private String resolveExtension(String requested) {
+        if (requested == null || requested.isBlank()) {
+            return DEFAULT_AUDIO_EXTENSION;
+        }
+        String normalized = requested.toLowerCase().replace(".", "");
+        if (!ALLOWED_AUDIO_EXTENSIONS.contains(normalized)) {
+            throw new CustomException(CommonErrorCode.VALIDATION_ERROR);
+        }
+        return "." + normalized;
     }
 
     private String normalizePrefix(String prefix) {

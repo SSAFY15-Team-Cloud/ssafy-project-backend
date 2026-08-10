@@ -5,13 +5,11 @@ import com.ssafy.ssafy_project.room.domain.RoomStatus;
 import com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence.entity.RoomParticipantJpaEntity;
 import com.ssafy.ssafy_project.support.ControllerIntegrationTestSupport;
 import com.ssafy.ssafy_project.user.adapter.out.persistence.entity.UserJpaEntity;
-import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,18 +82,17 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
     }
 
     @Test
-    void joinRoom_throws_exception_when_room_is_ended() {
+    void joinRoom_returns_conflict_when_room_is_ended() throws Exception {
         UserJpaEntity owner = saveUser("ended-join-owner@test.com", "password123!", "owner", "Owner");
         UserJpaEntity participant = saveUser("ended-join-participant@test.com", "password123!", "participant", "Participant");
         RoomJpaEntity room = saveRoom("Ended Join Room", owner);
         room.endRoom();
         roomJpaRepository.save(room);
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId()))))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Request processing failed");
+        mockMvc.perform(post("/api/rooms/{roomCode}/join", room.getRoomCode())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(participant.getId())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("40910"));
     }
 
     @Test
@@ -132,11 +129,10 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
         UserJpaEntity outsider = saveUser("outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Non Participant Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Request processing failed");
+        mockMvc.perform(post("/api/rooms/{roomId}/leave", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("40311"));
     }
 
     @Test
@@ -239,10 +235,9 @@ class RoomParticipationControllerIntegrationTest extends ControllerIntegrationTe
         UserJpaEntity outsider = saveUser("participants-outsider@test.com", "password123!", "outsider", "Outsider");
         RoomJpaEntity room = saveRoom("Participants Guard Room", owner);
 
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/rooms/{roomId}/participants", room.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId()))))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Request processing failed");
+        mockMvc.perform(get("/api/rooms/{roomId}/participants", room.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + createAccessToken(outsider.getId())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("40311"));
     }
 }

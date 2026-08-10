@@ -5,6 +5,7 @@ import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
 import com.ssafy.ssafy_project.global.infrastructure.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -35,11 +36,13 @@ public class SecurityConfig {
 
     private final JwtPortOut jwtPortOut;
 
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
     private static final String[] whiteList = {
             "/api/auth/**",
             "/ws",
-            "/ws/**",
-            "/ws-stomp/**"
+            "/ws/**"
     };
 
     // 작업 순위1. CSRF
@@ -76,14 +79,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration ccf = new CorsConfiguration();
-        // TODO : EndPoint 설정 필요 [ Front ]
-        ccf.setAllowedOrigins(List.of("http://localhost:8081/front"));
-        ccf.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        ccf.setAllowedOrigins(List.of(frontendBaseUrl));
+        ccf.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         ccf.setAllowCredentials(true);
-//        ccf.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
-        // TODO : 개발용 임시 Allow
-        ccf.setAllowedOriginPatterns(List.of("*"));
-        ccf.setAllowedHeaders(List.of("*"));
+        ccf.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         ccf.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 

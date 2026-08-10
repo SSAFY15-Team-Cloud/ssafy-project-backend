@@ -19,6 +19,7 @@ import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetReportRespons
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetReportStatusResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetRoomAudiosResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.GetRoomResponse;
+import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.IssueRtcTokenResponse;
 import com.ssafy.ssafy_project.room.adapter.in.web.dto.response.UpdateRoomResponse;
 import com.ssafy.ssafy_project.room.application.port.in.CreateRoomCommand;
 import com.ssafy.ssafy_project.room.application.port.in.CreateRoomPortIn;
@@ -28,6 +29,9 @@ import com.ssafy.ssafy_project.room.application.port.in.DeleteRoomPortIn;
 import com.ssafy.ssafy_project.room.application.port.in.GetRoomCommand;
 import com.ssafy.ssafy_project.room.application.port.in.GetRoomPortIn;
 import com.ssafy.ssafy_project.room.application.port.in.GetRoomResult;
+import com.ssafy.ssafy_project.room.application.port.in.IssueRtcTokenCommand;
+import com.ssafy.ssafy_project.room.application.port.in.IssueRtcTokenPortIn;
+import com.ssafy.ssafy_project.room.application.port.in.IssueRtcTokenResult;
 import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomCommand;
 import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomPortIn;
 import com.ssafy.ssafy_project.room.application.port.in.UpdateRoomResult;
@@ -43,6 +47,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -58,6 +63,7 @@ public class RoomController {
     private final GenerateAudioUploadUrlPortIn generateAudioUploadUrlPortIn;
     private final GetReportPortIn getReportPortIn;
     private final GetReportStatusPortIn getReportStatusPortIn;
+    private final IssueRtcTokenPortIn issueRtcTokenPortIn;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -102,11 +108,12 @@ public class RoomController {
     @PostMapping("/{roomId}/audios")
     public ResponseEntity<Void> createAudio(
             @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody CreateAudioRequest request
     ) {
         CreateAudioMetadataCommand command = new CreateAudioMetadataCommand(
                 roomId,
-                request.getSpeakerId(),
+                userId,
                 request.getPath(),
                 request.getMimeType(),
                 request.getDuration(),
@@ -130,24 +137,46 @@ public class RoomController {
     @GetMapping("/{roomId}/audios/upload-url")
     public ResponseEntity<GenerateAudioUploadUrlResponse> generateAudioUploadUrl(
             @PathVariable Long roomId,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(value = "extension", required = false) String extension
     ) {
         GenerateAudioUploadUrlResult result = generateAudioUploadUrlPortIn.generateUrl(
-                new GenerateAudioUploadUrlCommand(roomId, userId)
+                new GenerateAudioUploadUrlCommand(roomId, userId, extension)
         );
 
         return ResponseEntity.ok(new GenerateAudioUploadUrlResponse(result.uploadUrl()));
     }
 
+    @PostMapping("/{roomId}/rtc-token")
+    public ResponseEntity<IssueRtcTokenResponse> issueRtcToken(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        IssueRtcTokenResult result = issueRtcTokenPortIn.issueToken(new IssueRtcTokenCommand(roomId, userId));
+        return ResponseEntity.ok(new IssueRtcTokenResponse(
+                result.serverUrl(),
+                result.token(),
+                result.roomName(),
+                result.identity(),
+                result.displayName()
+        ));
+    }
+
     @GetMapping("/{roomId}/report/status")
-    public ResponseEntity<GetReportStatusResponse> getReportStatus(@PathVariable Long roomId) {
-        GetReportStatusResult result = getReportStatusPortIn.getStatus(roomId);
+    public ResponseEntity<GetReportStatusResponse> getReportStatus(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        GetReportStatusResult result = getReportStatusPortIn.getStatus(roomId, userId);
         return ResponseEntity.ok(new GetReportStatusResponse(result.status()));
     }
 
     @GetMapping("/{roomId}/report")
-    public ResponseEntity<GetReportResponse> getReport(@PathVariable Long roomId) {
-        GetReportResult result = getReportPortIn.getReport(roomId);
+    public ResponseEntity<GetReportResponse> getReport(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        GetReportResult result = getReportPortIn.getReport(roomId, userId);
         return ResponseEntity.ok(new GetReportResponse(
                 result.reportId(),
                 result.ownerId(),

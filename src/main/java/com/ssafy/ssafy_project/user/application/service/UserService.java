@@ -1,6 +1,8 @@
 package com.ssafy.ssafy_project.user.application.service;
 
 import com.ssafy.ssafy_project.global.application.port.out.JwtPortOut;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.global.infrastructure.config.ProfileImageProperties;
 import com.ssafy.ssafy_project.user.application.port.in.*;
 import com.ssafy.ssafy_project.user.application.port.out.ProfileImageStoragePortOut;
@@ -51,11 +53,11 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         User user = getActiveUser(command.userId());
 
         if (!passwordEncoder.matches(command.currentPassword(), user.getPassword())) {
-            throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(CommonErrorCode.PASSWORD_MISMATCH);
         }
 
         if (passwordEncoder.matches(command.newPassword(), user.getPassword())) {
-            throw new RuntimeException("동일한 비밀번호로는 변경이 불가합니다.");
+            throw new CustomException(CommonErrorCode.SAME_PASSWORD);
         }
 
         String encodedPassword = passwordEncoder.encode(command.newPassword());
@@ -73,7 +75,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         }
 
         if (loadUserPortOut.existsActiveByNickname(command.nickname())) {
-            throw new RuntimeException("이미 사용하고 있는 닉네임입니다.");
+            throw new CustomException(CommonErrorCode.DUPLICATE_NICKNAME);
         }
 
         updateUserPortOut.updateNickname(command.userId(), command.nickname());
@@ -83,7 +85,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         User user = loadUserPortOut.loadById(userId);
 
         if (user.isDeleted()) {
-            throw new RuntimeException("삭제된 사용자입니다.");
+            throw new CustomException(CommonErrorCode.USER_DELETED);
         }
 
         return user;
@@ -95,7 +97,7 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
         User user = getActiveUser(command.userId());
 
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {
-            throw new RuntimeException("사용자 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(CommonErrorCode.PASSWORD_MISMATCH);
         }
 
         userWithdrawalProcessor.process(command.userId());
@@ -142,13 +144,13 @@ public class UserService implements GetMyInfoPortIn, UpdateNicknamePortIn, Chang
 
     private void validateProfileImageKey(Long userId, String objectKey) {
         if (objectKey == null || objectKey.isBlank()) {
-            throw new RuntimeException("Object Key 값이 필요합니다.");
+            throw new CustomException(CommonErrorCode.INVALID_OBJECT_KEY);
         }
 
         String prefix = profileImageProperties.prefix() + "/" + userId + "/";
 
         if (!objectKey.startsWith(prefix)) {
-            throw new RuntimeException("유효하지 않은 Object Key값입니다.");
+            throw new CustomException(CommonErrorCode.INVALID_OBJECT_KEY);
         }
     }
 

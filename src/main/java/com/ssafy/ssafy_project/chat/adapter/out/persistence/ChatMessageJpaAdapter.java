@@ -1,6 +1,8 @@
 package com.ssafy.ssafy_project.chat.adapter.out.persistence;
 
 import com.ssafy.ssafy_project.chat.adapter.out.persistence.entity.ChatMessageJpaEntity;
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.chat.adapter.out.persistence.repository.ChatMessageJpaRepository;
 import com.ssafy.ssafy_project.chat.application.port.out.CreateMessagePortOut;
 import com.ssafy.ssafy_project.chat.application.port.out.DeleteMessagePortOut;
@@ -53,7 +55,7 @@ public class ChatMessageJpaAdapter implements CreateMessagePortOut, LoadMessageP
     @Override
     public ChatMessage findByMessageId(Long messageId) {
         ChatMessageJpaEntity chatMessageJpaEntity = chatMessageJpaRepository.findById(messageId)
-                .orElseThrow(()-> new RuntimeException("해당 아이디의 메시지를 찾을 수 없습니다."));
+                .orElseThrow(()-> new CustomException(CommonErrorCode.MESSAGE_NOT_FOUND));
 
         return toDomain(chatMessageJpaEntity);
     }
@@ -74,10 +76,10 @@ public class ChatMessageJpaAdapter implements CreateMessagePortOut, LoadMessageP
 
     private ChatMessageJpaEntity toEntity(ChatMessage chatMessage){
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(chatMessage.getRoom().getId())
-                .orElseThrow(()-> new RuntimeException("방을 찾을 수 없습니다."));
+                .orElseThrow(()-> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
 
         UserJpaEntity userJpaEntity = userJpaRepository.findById(chatMessage.getUser().getId())
-                .orElseThrow(()-> new RuntimeException("유저을 찾을 수 없습니다."));
+                .orElseThrow(()-> new CustomException(CommonErrorCode.USER_NOT_FOUND));
 
         return new ChatMessageJpaEntity(
                 chatMessage.getId(),

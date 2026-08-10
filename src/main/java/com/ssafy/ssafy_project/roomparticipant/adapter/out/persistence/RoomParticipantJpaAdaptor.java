@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.roomparticipant.adapter.out.persistence;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.entity.RoomJpaEntity;
 import com.ssafy.ssafy_project.room.adapter.out.persistence.repository.RoomJpaRepository;
 import com.ssafy.ssafy_project.room.domain.Room;
@@ -30,16 +32,16 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
         RoomParticipantJpaEntity roomParticipantJpaEntity = null;
         if (roomParticipant.getId() == null) {
             RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomParticipant.getRoom().getId())
-                    .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
 
             UserJpaEntity userJpaEntity = userJpaRepository.findById(roomParticipant.getUser().getId())
-                    .orElseThrow(() -> new RuntimeException("유저 찾을 수 없습니다."));
+                    .orElseThrow(() -> new CustomException(CommonErrorCode.USER_NOT_FOUND));
             roomParticipantJpaEntity = new RoomParticipantJpaEntity(roomJpaEntity, userJpaEntity);
             roomParticipantJpaEntity.updateFrom(roomParticipant);
         }
         if (roomParticipant.getId() != null) {
             roomParticipantJpaEntity = roomParticipantJpaRepository.findById(roomParticipant.getId())
-                    .orElseThrow(() -> new RuntimeException("방 참가자를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new CustomException(CommonErrorCode.PARTICIPANT_NOT_FOUND));
             roomParticipantJpaEntity.updateFrom(roomParticipant);
         }
         roomParticipantJpaRepository.save(roomParticipantJpaEntity);
@@ -63,7 +65,7 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
     @Override
     public List<RoomParticipant> loadActiveRoomParticipantsByRoomId(Long roomId) {
         RoomJpaEntity roomJpaEntity = roomJpaRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(CommonErrorCode.ROOM_NOT_FOUND));
 
         return roomParticipantJpaRepository.findAllByRoomJpaEntity_IdAndIsActiveTrue(roomId)
                 .stream()
@@ -100,6 +102,11 @@ public class RoomParticipantJpaAdaptor implements SaveRoomParticipantPortOut, Fi
 
     public boolean existsByRoom_IdAndUser_IdAndIsActiveTrue(Long roomId, Long userId) {
         return roomParticipantJpaRepository.existsByRoomJpaEntity_IdAndUserJpaEntity_IdAndIsActiveTrue(roomId, userId);
+    }
+
+    @Override
+    public boolean existsByRoomIdAndUserId(Long roomId, Long userId) {
+        return roomParticipantJpaRepository.existsByRoomJpaEntity_IdAndUserJpaEntity_Id(roomId, userId);
     }
 
     @Override

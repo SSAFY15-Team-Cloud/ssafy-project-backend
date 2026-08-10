@@ -1,5 +1,7 @@
 package com.ssafy.ssafy_project.room.application.service;
 
+import com.ssafy.ssafy_project.global.exception.CommonErrorCode;
+import com.ssafy.ssafy_project.global.exception.CustomException;
 import com.ssafy.ssafy_project.room.application.port.in.*;
 import com.ssafy.ssafy_project.room.application.port.out.DeleteRoomPortOut;
 import com.ssafy.ssafy_project.room.application.port.out.LoadRoomPortOut;
@@ -57,11 +59,11 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
         String title = updateRoomCommand.title();
         Room room = loadRoomPortOut.loadById(roomId);
         if(!room.getHostId().equals(userId)){
-            throw new RuntimeException("방 생성자만 수정할 수 있습니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_HOST);
         }
 
         if(!RoomStatus.RUNNING.equals(room.getStatus())){
-            throw new RuntimeException("닫힌 방은 수정할 수 없습니다.");
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
         }
 
         room.updateTitle(title);
@@ -79,10 +81,10 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
         Long userId = deleteRoomCommand.userId();
         Room room = loadRoomPortOut.loadById(roomId);
         if(!room.getHostId().equals(userId)){
-            throw new RuntimeException("작성자만 방을 삭제할 수 있습니다.");
+            throw new CustomException(CommonErrorCode.NOT_ROOM_HOST);
         }
         if(!RoomStatus.RUNNING.equals(room.getStatus())){
-            throw new RuntimeException("이미 닫힌 방입니다.");
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
         }
 
         roomTerminationProcessor.terminate(room);
@@ -93,7 +95,7 @@ public class RoomService implements CreateRoomPortIn, UpdateRoomPortIn,
         String roomCode = getRoomCommand.roomCode();
         Room room = loadRoomPortOut.loadByRoomCode(roomCode);
         if(room.getStatus().equals(RoomStatus.ENDED)){
-            throw new RuntimeException("종료된 방입니다.");
+            throw new CustomException(CommonErrorCode.ROOM_ALREADY_ENDED);
         }
 
         return new GetRoomResult(
