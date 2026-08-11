@@ -8,6 +8,12 @@ Zoom처럼 회의를 만들고 초대코드/딥링크로 참여하는 화상회�
 - **실시간 AI 인사이트**: 발화가 쌓일 때마다 롤링 요약 · 액션아이템 · 미해결 쟁점 갱신
 - **지식 위키 문서 추천**: 업로드한 문서를 임베딩(pgvector)해두고, 대화 맥락과 관련된 문서를 회의 중 실시간 추천 + 다운로드 링크 제공
 - **자동 회의록**: 회의 종료 시 발언자별 요약/결정사항/액션아이템이 정리된 회의록 생성
+- **AI 코파일럿**: 회의 중 "지금까지 결정된 게 뭐야?" 질문 → 트랜스크립트 + 위키 RAG 답변(출처 포함)
+- **번역 자막**: 실시간 자막을 English/日本語로 토글 (원문 병기)
+- **리액션 · 손들기**: LiveKit 데이터 채널 기반 플로팅 이모지 / 손들기 배너
+- **발언 점유율**: 참가자별 발언 시간 실시간 통계 바
+- **배경 블러**: 카메라 가상 배경 처리 (Chromium)
+- **회의 분위기**: 인사이트에 무드 게이지(이모지+라벨)
 - **채팅**: STOMP 기반 회의방 채팅 (참가자 검증 포함)
 
 ## 아키텍처
@@ -90,6 +96,10 @@ cd frontend && npm run build   # 타입체크 + 빌드
 | 오디오 업로드 | `GET /api/rooms/{roomId}/audios/upload-url?extension=webm` → S3 PUT → `POST /api/rooms/{roomId}/audios` |
 | 회의록 | `GET /api/rooms/{roomId}/report/status` · `GET /api/rooms/{roomId}/report` |
 | 지식 위키 | `POST/GET /api/knowledge/documents` · `GET .../{id}/download-url` · `DELETE .../{id}` |
+| **AI 코파일럿** | `POST /api/rooms/{roomId}/copilot` `{question}` → 답변+출처 |
+| 자막 번역 | `POST /api/ai/translate` `{texts[], targetLang}` |
+| 발언 통계 | `GET /api/rooms/{roomId}/speaking-stats` |
+| 내 회의 이력 | `GET /api/users/me/rooms` |
 
 STOMP (연결: `/ws`, CONNECT 헤더 `Authorization: Bearer {accessToken}`):
 
