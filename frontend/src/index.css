@@ -64,6 +64,25 @@ body {
   background: transparent;
 }
 
+/* 이모지 리액션 플로팅 애니메이션 */
+@keyframes reaction-float {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-30px) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-260px) scale(1);
+    opacity: 0;
+  }
+}
+.reaction-float {
+  animation: reaction-float 2.8s ease-out forwards;
+}
+
 /* AI 회의록 마크다운 렌더링 */
 .prose-report {
   font-size: 14.5px;

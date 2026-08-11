@@ -34,6 +34,7 @@ export interface MeetingInsight {
   keyPoints?: string[]
   actionItems?: { assignee: string; task: string; due: string }[]
   openQuestions?: string[]
+  mood?: { emoji: string; label: string }
 }
 
 export interface InsightPayload {

@@ -77,10 +77,51 @@ export const roomsApi = {
   reportStatus: (roomId: number) =>
     api<{ status: 'DONE' | 'PENDING' }>(`/rooms/${roomId}/report/status`),
 
+  speakingStats: (roomId: number) =>
+    api<SpeakerStat[]>(`/rooms/${roomId}/speaking-stats`),
+
+  copilotAsk: (roomId: number, question: string) =>
+    api<CopilotAnswer>(`/rooms/${roomId}/copilot`, {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
+
+  myRooms: () => api<MyRoomEntry[]>('/users/me/rooms'),
+
   report: (roomId: number) =>
     api<{ reportId: number; ownerId: number; roomId: number; content: string; createdTime: string; title: string }>(
       `/rooms/${roomId}/report`,
     ),
+}
+
+export interface SpeakerStat {
+  userId: number
+  name: string
+  totalSeconds: number
+}
+
+export interface CopilotAnswer {
+  answer: string
+  sources: { documentId: number; title: string; score: number }[]
+}
+
+export interface MyRoomEntry {
+  roomId: number
+  title: string
+  roomCode: string
+  status: 'RUNNING' | 'ENDED'
+  myRole: 'OWNER' | 'PARTICIPANT'
+  joinedTime: string
+  endedTime: string | null
+  reportStatus: 'DONE' | 'PENDING' | 'NONE'
+}
+
+export const aiApi = {
+  translate: (texts: string[], targetLang: 'en' | 'ja' | 'zh') =>
+    api<{ translations: string[] }>('/ai/translate', {
+      method: 'POST',
+      body: JSON.stringify({ texts, targetLang }),
+    }),
 }
 
 export interface KnowledgeDocument {

@@ -6,12 +6,14 @@ import {
   ParticipantTile,
   RoomAudioRenderer,
   useLocalParticipant,
+  useRoomContext,
   useTracks,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track } from 'livekit-client'
-import { roomsApi } from '../lib/rooms'
-import type { RtcToken } from '../lib/rooms'
+import { RoomEvent, Track } from 'livekit-client'
+import type { LocalVideoTrack, RemoteParticipant } from 'livekit-client'
+import { aiApi, knowledgeApi, roomsApi } from '../lib/rooms'
+import type { CopilotAnswer, RtcToken, SpeakerStat } from '../lib/rooms'
 import { createRoomStompClient } from '../lib/stomp'
 import type {
   ChatMessagePayload,
@@ -24,6 +26,20 @@ import { useAuth } from '../lib/auth'
 import { CamIcon, MicIcon } from './PreJoinPage'
 
 type PanelTab = 'chat' | 'people' | 'ai'
+type CaptionLang = 'ko' | 'en' | 'ja'
+
+type DataMessage =
+  | { type: 'reaction'; emoji: string }
+  | { type: 'hand'; raised: boolean }
+
+interface FloatingReaction {
+  id: number
+  emoji: string
+  name: string
+  left: number
+}
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '😮']
 
 export default function MeetingPage() {
   const { roomId: roomIdParam } = useParams<{ roomId: string }>()
@@ -92,6 +108,7 @@ export default function MeetingPage() {
 function MeetingRoomInner({ roomId }: { roomId: number }) {
   const navigate = useNavigate()
   const user = useAuth((s) => s.user)
+  const room = useRoomContext()
 
   const [tab, setTab] = useState<PanelTab>('ai')
   const [panelOpen, setPanelOpen] = useState(true)
@@ -104,7 +121,16 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [unread, setUnread] = useState(0)
   const [leaving, setLeaving] = useState(false)
 
+  // 신규 기능 상태
+  const [reactions, setReactions] = useState<FloatingReaction[]>([])
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false)
+  const [raisedHands, setRaisedHands] = useState<Record<string, string>>({}) // identity → name
+  const [myHandRaised, setMyHandRaised] = useState(false)
+  const [blurOn, setBlurOn] = useState(false)
+  const [blurBusy, setBlurBusy] = useState(false)
+
   const stompRef = useRef<ReturnType<typeof createRoomStompClient> | null>(null)
+  const reactionSeq = useRef(0)
   const tabRef = useRef(tab)
   tabRef.current = tab
 
@@ -143,6 +169,100 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     stompRef.current = client
     return () => client.deactivate()
   }, [roomId])
+
+  // LiveKit 데이터 채널 수신 (리액션 / 손들기)
+  const spawnReaction = useCallback((emoji: string, name: string) => {
+    const id = ++reactionSeq.current
+    setReactions((prev) => [...prev, { id, emoji, name, left: 12 + Math.random() * 70 }])
+    setTimeout(() => setReactions((prev) => prev.filter((r) => r.id !== id)), 2800)
+  }, [])
+
+  useEffect(() => {
+    const onData = (payload: Uint8Array, participant?: RemoteParticipant) => {
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload)) as DataMessage
+        const name = participant?.name || participant?.identity || '익명'
+        if (message.type === 'reaction') {
+          spawnReaction(message.emoji, name)
+        }
+        if (message.type === 'hand' && participant) {
+          setRaisedHands((prev) => {
+            const next = { ...prev }
+            if (message.raised) next[participant.identity] = name
+            else delete next[participant.identity]
+            return next
+          })
+        }
+      } catch {
+        /* 알 수 없는 데이터 무시 */
+      }
+    }
+    const onLeft = (participant: RemoteParticipant) => {
+      setRaisedHands((prev) => {
+        const next = { ...prev }
+        delete next[participant.identity]
+        return next
+      })
+    }
+    room.on(RoomEvent.DataReceived, onData)
+    room.on(RoomEvent.ParticipantDisconnected, onLeft)
+    return () => {
+      room.off(RoomEvent.DataReceived, onData)
+      room.off(RoomEvent.ParticipantDisconnected, onLeft)
+    }
+  }, [room, spawnReaction])
+
+  const publishData = useCallback(
+    (message: DataMessage) => {
+      void localParticipant.publishData(new TextEncoder().encode(JSON.stringify(message)), {
+        reliable: true,
+      })
+    },
+    [localParticipant],
+  )
+
+  const sendReaction = (emoji: string) => {
+    publishData({ type: 'reaction', emoji })
+    spawnReaction(emoji, user?.nickname ?? '나') // 내 화면에도 표시
+    setReactionPickerOpen(false)
+  }
+
+  const toggleHand = () => {
+    const next = !myHandRaised
+    setMyHandRaised(next)
+    publishData({ type: 'hand', raised: next })
+    setRaisedHands((prev) => {
+      const map = { ...prev }
+      const identity = String(user?.userId ?? 'me')
+      if (next) map[identity] = user?.nickname ?? '나'
+      else delete map[identity]
+      return map
+    })
+  }
+
+  // 배경 블러 (Chromium 계열만 지원)
+  const blurSupported = typeof window !== 'undefined' && 'MediaStreamTrackProcessor' in window
+  const toggleBlur = async () => {
+    if (blurBusy || !isCameraEnabled) return
+    setBlurBusy(true)
+    try {
+      const publication = localParticipant.getTrackPublication(Track.Source.Camera)
+      const track = publication?.track as LocalVideoTrack | undefined
+      if (!track) return
+      if (blurOn) {
+        await track.stopProcessor()
+        setBlurOn(false)
+      } else {
+        const { BackgroundBlur } = await import('@livekit/track-processors')
+        await track.setProcessor(BackgroundBlur(10))
+        setBlurOn(true)
+      }
+    } catch (e) {
+      console.warn('background blur failed', e)
+    } finally {
+      setBlurBusy(false)
+    }
+  }
 
   // 마이크가 켜져 있는 동안 15초 청크 STT 업로드
   useEffect(() => {
@@ -186,14 +306,39 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     if (next === 'chat') setUnread(0)
   }
 
+  const raisedHandNames = Object.values(raisedHands)
+
   return (
     <div className="flex h-full flex-col bg-video">
       <div className="flex min-h-0 flex-1">
-        {/* 비디오 그리드 */}
-        <div className="min-w-0 flex-1 p-4">
+        {/* 비디오 그리드 + 리액션 오버레이 */}
+        <div className="relative min-w-0 flex-1 p-4">
           <GridLayout tracks={tracks} className="h-full">
             <ParticipantTile />
           </GridLayout>
+
+          {/* 플로팅 이모지 리액션 */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {reactions.map((r) => (
+              <div
+                key={r.id}
+                className="reaction-float absolute bottom-16 flex flex-col items-center"
+                style={{ left: `${r.left}%` }}
+              >
+                <span className="text-4xl">{r.emoji}</span>
+                <span className="mt-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white">
+                  {r.name}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* 손들기 배너 */}
+          {raisedHandNames.length > 0 && (
+            <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-[#f59e0b]/90 px-4 py-1.5 text-[13px] font-bold text-white shadow-lg">
+              ✋ {raisedHandNames.join(', ')}
+            </div>
+          )}
         </div>
 
         {/* 사이드 패널 */}
@@ -202,7 +347,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
             <div className="flex border-b border-white/10">
               {(
                 [
-                  ['ai', 'AI 어시스턴트'],
+                  ['ai', 'AI'],
                   ['chat', unread > 0 ? `채팅 (${unread})` : '채팅'],
                   ['people', `참가자 ${participants.length}`],
                 ] as [PanelTab, string][]
@@ -223,12 +368,17 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               {tab === 'ai' && (
-                <AiPanel transcripts={transcripts} insight={insight} recommendations={recommendations} />
+                <AiPanel
+                  roomId={roomId}
+                  transcripts={transcripts}
+                  insight={insight}
+                  recommendations={recommendations}
+                />
               )}
-              {tab === 'chat' && (
-                <ChatPanel messages={chatMessages} myUserId={user?.userId} />
+              {tab === 'chat' && <ChatPanel messages={chatMessages} myUserId={user?.userId} />}
+              {tab === 'people' && (
+                <PeoplePanel roomId={roomId} participants={participants} raisedHands={raisedHands} />
               )}
-              {tab === 'people' && <PeoplePanel participants={participants} />}
             </div>
 
             {tab === 'chat' && (
@@ -283,6 +433,47 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
           >
             <ShareIcon />
           </ControlButton>
+
+          {blurSupported && (
+            <ControlButton
+              on={blurOn}
+              activeStyle="share"
+              onClick={() => void toggleBlur()}
+              label="배경 블러"
+            >
+              <BlurIcon />
+            </ControlButton>
+          )}
+
+          <ControlButton on={myHandRaised} activeStyle="hand" onClick={toggleHand} label="손들기">
+            <span className="text-[17px] leading-none">✋</span>
+          </ControlButton>
+
+          {/* 이모지 리액션 */}
+          <div className="relative">
+            <ControlButton
+              on={reactionPickerOpen}
+              activeStyle="share"
+              onClick={() => setReactionPickerOpen((v) => !v)}
+              label="리액션"
+            >
+              <span className="text-[17px] leading-none">😀</span>
+            </ControlButton>
+            {reactionPickerOpen && (
+              <div className="absolute bottom-14 left-1/2 flex -translate-x-1/2 gap-1 rounded-full bg-[#1c2547] px-3 py-2 shadow-xl">
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => sendReaction(emoji)}
+                    className="rounded-full p-1.5 text-[20px] transition-transform hover:scale-125"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => void leave()}
             disabled={leaving}
@@ -316,16 +507,16 @@ function ControlButton({
   onClick: () => void
   label: string
   children: React.ReactNode
-  activeStyle?: 'device' | 'share'
+  activeStyle?: 'device' | 'share' | 'hand'
 }) {
-  const activeClass =
-    activeStyle === 'share'
-      ? on
-        ? 'bg-[#5276df] text-white'
-        : 'bg-white/10 text-white hover:bg-white/20'
-      : on
-        ? 'bg-white/10 text-white hover:bg-white/20'
-        : 'bg-danger/20 text-danger'
+  let activeClass: string
+  if (activeStyle === 'device') {
+    activeClass = on ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-danger/20 text-danger'
+  } else if (activeStyle === 'hand') {
+    activeClass = on ? 'bg-[#f59e0b] text-white' : 'bg-white/10 text-white hover:bg-white/20'
+  } else {
+    activeClass = on ? 'bg-[#5276df] text-white' : 'bg-white/10 text-white hover:bg-white/20'
+  }
   return (
     <button
       onClick={onClick}
@@ -349,11 +540,23 @@ function ShareIcon() {
   )
 }
 
+function BlurIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="9" r="3.5" />
+      <path d="M5.5 20c1.2-3 3.6-4.5 6.5-4.5s5.3 1.5 6.5 4.5" />
+      <path d="M2 5h3M2 9h2M2 13h3M19 5h3M20 9h2M19 13h3" strokeDasharray="1 3" />
+    </svg>
+  )
+}
+
 function AiPanel({
+  roomId,
   transcripts,
   insight,
   recommendations,
 }: {
+  roomId: number
   transcripts: TranscriptPayload[]
   insight: InsightPayload | null
   recommendations: RecommendedDocument[]
@@ -363,8 +566,133 @@ function AiPanel({
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [transcripts.length])
 
+  // 자막 번역
+  const [captionLang, setCaptionLang] = useState<CaptionLang>('ko')
+  const [translations, setTranslations] = useState<Record<string, string>>({}) // `${lang}:${audioId}` → text
+  const translating = useRef(false)
+
+  useEffect(() => {
+    if (captionLang === 'ko' || translating.current) return
+    const pending = transcripts
+      .filter((t) => !translations[`${captionLang}:${t.audioId}`])
+      .slice(-10)
+    if (pending.length === 0) return
+
+    translating.current = true
+    aiApi
+      .translate(pending.map((t) => t.text), captionLang)
+      .then((res) => {
+        setTranslations((prev) => {
+          const next = { ...prev }
+          pending.forEach((t, i) => {
+            next[`${captionLang}:${t.audioId}`] = res.translations[i]
+          })
+          return next
+        })
+      })
+      .catch(() => {})
+      .finally(() => {
+        translating.current = false
+      })
+  }, [captionLang, transcripts, translations])
+
+  // 코파일럿
+  const [question, setQuestion] = useState('')
+  const [asking, setAsking] = useState(false)
+  const [qaList, setQaList] = useState<{ q: string; a: CopilotAnswer | null }[]>([])
+
+  const ask = async () => {
+    const q = question.trim()
+    if (!q || asking) return
+    setAsking(true)
+    setQuestion('')
+    setQaList((prev) => [...prev, { q, a: null }])
+    try {
+      const answer = await roomsApi.copilotAsk(roomId, q)
+      setQaList((prev) => prev.map((item, i) => (i === prev.length - 1 ? { ...item, a: answer } : item)))
+    } catch {
+      setQaList((prev) =>
+        prev.map((item, i) =>
+          i === prev.length - 1
+            ? { ...item, a: { answer: '답변에 실패했어요. 잠시 후 다시 시도해주세요.', sources: [] } }
+            : item,
+        ),
+      )
+    } finally {
+      setAsking(false)
+    }
+  }
+
+  const downloadSource = async (documentId: number) => {
+    try {
+      const { downloadUrl } = await knowledgeApi.downloadUrl(documentId)
+      window.open(downloadUrl, '_blank')
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div className="space-y-5 p-4">
+      {/* 코파일럿 */}
+      <section>
+        <PanelHeading live={asking}>AI 코파일럿</PanelHeading>
+        <div className="space-y-2.5">
+          {qaList.length === 0 && (
+            <p className="text-[12px] leading-relaxed text-white/40">
+              "지금까지 결정된 게 뭐야?", "OO 문서에 뭐라고 써있어?" 처럼 물어보세요. 회의 내용과
+              지식 위키를 함께 검색해 답합니다.
+            </p>
+          )}
+          {qaList.map((item, i) => (
+            <div key={i} className="rounded-[12px] bg-white/5 p-3">
+              <p className="text-[12px] font-bold text-[#a9bcff]">Q. {item.q}</p>
+              {item.a === null ? (
+                <p className="mt-1.5 animate-pulse text-[12px] text-white/40">생각하는 중…</p>
+              ) : (
+                <>
+                  <p className="mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed text-white/85">
+                    {item.a.answer}
+                  </p>
+                  {item.a.sources.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.a.sources.map((s) => (
+                        <button
+                          key={s.documentId}
+                          onClick={() => void downloadSource(s.documentId)}
+                          className="rounded-full bg-[#5276df]/25 px-2.5 py-1 text-[10.5px] font-bold text-[#a9bcff] hover:bg-[#5276df]/40"
+                          title="문서 다운로드"
+                        >
+                          📄 {s.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) void ask()
+              }}
+              placeholder="회의에 대해 질문하기…"
+              className="min-w-0 flex-1 rounded-full bg-white/10 px-3.5 py-2 text-[12.5px] text-white outline-none placeholder:text-white/35 focus:bg-white/15"
+            />
+            <button
+              onClick={() => void ask()}
+              disabled={asking}
+              className="rounded-full bg-[#5276df] px-3.5 text-[12px] font-bold text-white hover:bg-[#4265c9] disabled:opacity-50"
+            >
+              질문
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* 추천 문서 */}
       <section>
         <PanelHeading live={recommendations.length > 0}>관련 문서 추천</PanelHeading>
@@ -399,7 +727,16 @@ function AiPanel({
 
       {/* 롤링 인사이트 */}
       <section>
-        <PanelHeading live={!!insight}>회의 인사이트</PanelHeading>
+        <div className="mb-2 flex items-center justify-between">
+          <PanelHeading live={!!insight} noMargin>
+            회의 인사이트
+          </PanelHeading>
+          {insight?.insight.mood && (
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white/80">
+              {insight.insight.mood.emoji} {insight.insight.mood.label}
+            </span>
+          )}
+        </div>
         {!insight ? (
           <p className="text-[12px] leading-relaxed text-white/40">
             발화가 쌓이면 AI가 요약 · 액션아이템 · 논점을 계속 갱신합니다.
@@ -450,21 +787,41 @@ function AiPanel({
         )}
       </section>
 
-      {/* 실시간 자막 */}
+      {/* 실시간 자막 + 번역 */}
       <section>
-        <PanelHeading live={transcripts.length > 0}>실시간 자막</PanelHeading>
+        <div className="mb-2 flex items-center justify-between">
+          <PanelHeading live={transcripts.length > 0} noMargin>
+            실시간 자막
+          </PanelHeading>
+          <select
+            value={captionLang}
+            onChange={(e) => setCaptionLang(e.target.value as CaptionLang)}
+            className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white/80 outline-none"
+          >
+            <option value="ko">원문</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+          </select>
+        </div>
         {transcripts.length === 0 ? (
           <p className="text-[12px] leading-relaxed text-white/40">
             마이크를 켜고 말하면 잠시 후 자막이 이곳에 표시됩니다.
           </p>
         ) : (
           <ul className="space-y-2">
-            {transcripts.map((t) => (
-              <li key={t.audioId} className="text-[12.5px] leading-relaxed">
-                <span className="font-bold text-[#8ea5f8]">{t.speakerName}</span>{' '}
-                <span className="text-white/80">{t.text}</span>
-              </li>
-            ))}
+            {transcripts.map((t) => {
+              const translated =
+                captionLang !== 'ko' ? translations[`${captionLang}:${t.audioId}`] : undefined
+              return (
+                <li key={t.audioId} className="text-[12.5px] leading-relaxed">
+                  <span className="font-bold text-[#8ea5f8]">{t.speakerName}</span>{' '}
+                  <span className="text-white/80">{translated ?? t.text}</span>
+                  {translated && (
+                    <p className="mt-0.5 pl-1 text-[11px] italic text-white/35">{t.text}</p>
+                  )}
+                </li>
+              )
+            })}
             <div ref={transcriptEndRef} />
           </ul>
         )}
@@ -473,9 +830,21 @@ function AiPanel({
   )
 }
 
-function PanelHeading({ children, live }: { children: React.ReactNode; live?: boolean }) {
+function PanelHeading({
+  children,
+  live,
+  noMargin,
+}: {
+  children: React.ReactNode
+  live?: boolean
+  noMargin?: boolean
+}) {
   return (
-    <h3 className="mb-2 flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wide text-white/60">
+    <h3
+      className={`flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wide text-white/60 ${
+        noMargin ? '' : 'mb-2'
+      }`}
+    >
       {children}
       {live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4ade80]" />}
     </h3>
@@ -519,17 +888,73 @@ function ChatPanel({
   )
 }
 
-function PeoplePanel({ participants }: { participants: { userId: number; nickname: string }[] }) {
+function PeoplePanel({
+  roomId,
+  participants,
+  raisedHands,
+}: {
+  roomId: number
+  participants: { userId: number; nickname: string }[]
+  raisedHands: Record<string, string>
+}) {
+  const [stats, setStats] = useState<SpeakerStat[]>([])
+
+  useEffect(() => {
+    const load = () =>
+      roomsApi
+        .speakingStats(roomId)
+        .then(setStats)
+        .catch(() => {})
+    load()
+    const interval = setInterval(load, 10_000)
+    return () => clearInterval(interval)
+  }, [roomId])
+
+  const maxSeconds = Math.max(1, ...stats.map((s) => s.totalSeconds))
+  const statByUser = new Map(stats.map((s) => [s.userId, s.totalSeconds]))
+  const totalSeconds = stats.reduce((acc, s) => acc + s.totalSeconds, 0)
+
   return (
-    <ul className="space-y-1 p-4">
-      {participants.map((p) => (
-        <li key={p.userId} className="flex items-center gap-3 rounded-[12px] px-2 py-2 hover:bg-white/5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5276df]/40 text-[13px] font-black text-white">
-            {p.nickname.charAt(0)}
-          </span>
-          <span className="text-[13px] font-bold text-white/85">{p.nickname}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="p-4">
+      <ul className="space-y-2">
+        {participants.map((p) => {
+          const seconds = statByUser.get(p.userId) ?? 0
+          const handUp = raisedHands[String(p.userId)] !== undefined
+          return (
+            <li key={p.userId} className="rounded-[12px] px-2 py-2 hover:bg-white/5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#5276df]/40 text-[13px] font-black text-white">
+                  {p.nickname.charAt(0)}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-white/85">
+                  {p.nickname} {handUp && <span title="손들기">✋</span>}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-white/40">
+                  {formatDuration(seconds)}
+                </span>
+              </div>
+              {/* 발언 점유율 바 */}
+              <div className="ml-12 mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[#8ea5f8] transition-all duration-700"
+                  style={{ width: `${(seconds / maxSeconds) * 100}%` }}
+                />
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      {totalSeconds > 0 && (
+        <p className="mt-4 text-center font-mono text-[11px] text-white/35">
+          총 발언 {formatDuration(totalSeconds)}
+        </p>
+      )}
+    </div>
   )
+}
+
+function formatDuration(seconds: number) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return m > 0 ? `${m}분 ${s}초` : `${s}초`
 }

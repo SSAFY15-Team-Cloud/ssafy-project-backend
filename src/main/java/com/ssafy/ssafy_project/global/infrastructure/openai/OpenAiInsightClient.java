@@ -64,7 +64,8 @@ public class OpenAiInsightClient {
               "summary": "지금까지의 회의 흐름을 3문장 이내로 요약",
               "keyPoints": ["핵심 논점 (최대 5개)"],
               "actionItems": [{"assignee": "담당자 또는 미정", "task": "할 일", "due": "기한 또는 미정"}],
-              "openQuestions": ["아직 결론이 나지 않은 질문 (최대 3개)"]
+              "openQuestions": ["아직 결론이 나지 않은 질문 (최대 3개)"],
+              "mood": {"emoji": "회의 분위기를 나타내는 이모지 1개", "label": "분위기 한 단어 (예: 활발함, 차분함, 긴장됨)"}
             }
             Rules:
             - Arrays may be empty if nothing reliable exists.

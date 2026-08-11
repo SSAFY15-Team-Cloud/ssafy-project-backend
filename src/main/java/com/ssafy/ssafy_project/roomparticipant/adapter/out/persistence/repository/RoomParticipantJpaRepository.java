@@ -50,4 +50,12 @@ public interface RoomParticipantJpaRepository extends JpaRepository<RoomParticip
 
     List<RoomParticipantJpaEntity> findAllByUserJpaEntity_IdAndIsActiveTrue(Long userId);
 
+    @Query("""
+            SELECT rp FROM RoomParticipantJpaEntity rp
+            JOIN FETCH rp.roomJpaEntity
+            WHERE rp.userJpaEntity.id = :userId
+            ORDER BY rp.createdTime DESC
+            """)
+    List<RoomParticipantJpaEntity> findAllWithRoomByUserId(@Param("userId") Long userId);
+
 }

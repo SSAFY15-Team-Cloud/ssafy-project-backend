@@ -7,6 +7,7 @@ import com.ssafy.ssafy_project.audio.application.port.in.CreateAudioMetadataPort
 import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlCommand;
 import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlPortIn;
 import com.ssafy.ssafy_project.audio.application.port.in.GenerateAudioUploadUrlResult;
+import com.ssafy.ssafy_project.audio.application.service.SpeakingStatsService;
 import com.ssafy.ssafy_project.report.application.port.in.GetReportPortIn;
 import com.ssafy.ssafy_project.report.application.port.in.GetReportResult;
 import com.ssafy.ssafy_project.report.application.port.in.GetReportStatusPortIn;
@@ -64,6 +65,7 @@ public class RoomController {
     private final GetReportPortIn getReportPortIn;
     private final GetReportStatusPortIn getReportStatusPortIn;
     private final IssueRtcTokenPortIn issueRtcTokenPortIn;
+    private final SpeakingStatsService speakingStatsService;
 
     @PostMapping
     public ResponseEntity<CreateRoomResponse> createRoom(
@@ -160,6 +162,14 @@ public class RoomController {
                 result.identity(),
                 result.displayName()
         ));
+    }
+
+    @GetMapping("/{roomId}/speaking-stats")
+    public ResponseEntity<java.util.List<SpeakingStatsService.SpeakerStat>> getSpeakingStats(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.ok(speakingStatsService.getStats(roomId, userId));
     }
 
     @GetMapping("/{roomId}/report/status")
