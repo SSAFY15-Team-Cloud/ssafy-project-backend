@@ -4,6 +4,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: meeting-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ssafy_project
       POSTGRES_USER: ssafy
@@ -23,6 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: meeting-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -36,6 +38,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: meeting-rabbitmq
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ssafy
       RABBITMQ_DEFAULT_PASS: ssafy
@@ -53,6 +56,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: meeting-minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -86,6 +90,7 @@ services:
   livekit:
     image: livekit/livekit-server:latest
     container_name: meeting-livekit
+    restart: unless-stopped
     command: --config /etc/livekit.yaml --bind 0.0.0.0 --node-ip 127.0.0.1
     volumes:
       - ./docker/livekit/livekit.yaml:/etc/livekit.yaml:ro
