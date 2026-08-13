@@ -9,6 +9,7 @@ export interface RoomStompHandlers {
   onInsight?: (payload: InsightPayload) => void
   onRecommendations?: (payload: RecommendationPayload) => void
   onVoiceAnswer?: (payload: VoiceAnswerPayload) => void
+  onPoll?: (payload: PollBroadcast) => void
   onConnected?: () => void
   onDisconnected?: () => void
 }
@@ -56,6 +57,17 @@ export interface RecommendationPayload {
   documents: RecommendedDocument[]
 }
 
+export interface PollBroadcast {
+  pollId: number
+  creatorId: number
+  question: string
+  options: string[]
+  counts: number[]
+  totalVotes: number
+  closed: boolean
+  myVote: number | null
+}
+
 export interface VoiceAnswerPayload {
   question: string
   answer: string
@@ -96,6 +108,9 @@ export function createRoomStompClient(roomId: number, handlers: RoomStompHandler
       })
       subscribe(`/sub/rooms/${roomId}/ai/voice`, (message) => {
         handlers.onVoiceAnswer?.(JSON.parse(message.body))
+      })
+      subscribe(`/sub/rooms/${roomId}/polls`, (message) => {
+        handlers.onPoll?.(JSON.parse(message.body))
       })
 
       handlers.onConnected?.()

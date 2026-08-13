@@ -13,6 +13,57 @@ type ReportState =
 
 const MAX_ATTEMPTS = 60
 
+/** 회의록 공개 공유 링크 생성/복사 버튼 */
+function ShareButton({ roomId }: { roomId: number }) {
+  const [copied, setCopied] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  const share = async () => {
+    if (busy) return
+    setBusy(true)
+    setError(false)
+    try {
+      const { shareToken } = await roomsApi.enableReportShare(roomId)
+      const url = `${window.location.origin}/share/${shareToken}`
+      setShareUrl(url) // 클립보드 실패해도 링크는 항상 보여준다
+      try {
+        await navigator.clipboard.writeText(url)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch {
+        /* 클립보드 불가 — URL 표시로 수동 복사 */
+      }
+    } catch {
+      setError(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      {shareUrl && (
+        <input
+          readOnly
+          value={shareUrl}
+          onFocus={(e) => e.currentTarget.select()}
+          className="w-[220px] rounded-full border border-line bg-surface px-3 py-1.5 font-mono text-[11px] text-muted outline-none"
+        />
+      )}
+      {error && <span className="text-[12px] font-semibold text-danger">공유 링크 생성 실패</span>}
+      <button
+        onClick={() => void share()}
+        disabled={busy}
+        className="rounded-full border border-line-strong px-4 py-2 text-[13px] font-bold text-muted hover:border-primary hover:text-primary disabled:opacity-50"
+      >
+        {copied ? '링크 복사됨 ✓' : '🔗 공유 링크'}
+      </button>
+    </span>
+  )
+}
+
 export default function ReportPage() {
   const { roomId: roomIdParam } = useParams<{ roomId: string }>()
   const roomId = Number(roomIdParam)
@@ -96,6 +147,7 @@ export default function ReportPage() {
         <>
           <Card className="report-print-area p-8">
             <div className="mb-6 flex items-center justify-end gap-2 print:hidden">
+              <ShareButton roomId={roomId} />
               <button
                 onClick={() => window.print()}
                 className="rounded-full border border-line-strong px-4 py-2 text-[13px] font-bold text-muted hover:border-primary hover:text-primary"

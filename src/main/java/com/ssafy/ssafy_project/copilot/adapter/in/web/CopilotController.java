@@ -5,6 +5,7 @@ import com.ssafy.ssafy_project.copilot.application.service.TranslateService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,12 @@ public class CopilotController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody AskRequest request
     ) {
-        return ResponseEntity.ok(meetingCopilotService.ask(roomId, userId, request.question()));
+        List<MeetingCopilotService.HistoryTurn> history = request.history() == null
+                ? List.of()
+                : request.history().stream()
+                        .map(turn -> new MeetingCopilotService.HistoryTurn(turn.question(), turn.answer()))
+                        .toList();
+        return ResponseEntity.ok(meetingCopilotService.ask(roomId, userId, request.question(), history));
     }
 
     @PostMapping("/api/ai/translate")
@@ -40,7 +46,14 @@ public class CopilotController {
     }
 
     public record AskRequest(
-            @NotBlank @Size(max = 500) String question
+            @NotBlank @Size(max = 500) String question,
+            @Size(max = 10) List<@Valid @NotNull HistoryTurnRequest> history
+    ) {
+    }
+
+    public record HistoryTurnRequest(
+            @NotBlank @Size(max = 500) String question,
+            @NotBlank @Size(max = 2000) String answer
     ) {
     }
 

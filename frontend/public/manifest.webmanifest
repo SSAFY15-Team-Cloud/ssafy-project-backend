@@ -1,0 +1,17 @@
+{
+  "name": "Meetiny — AI 온라인 미팅",
+  "short_name": "Meetiny",
+  "description": "AI가 함께하는 화상회의 — 실시간 자막, 코파일럿, 자동 회의록",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0e1530",
+  "theme_color": "#5276df",
+  "icons": [
+    {
+      "src": "/icons/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -66,7 +66,7 @@ export default function SearchPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder='예: "DB 포트를 왜 바꿨더라?", "WebRTC 미디어 서버 결정"'
           autoFocus
-          className="min-w-0 flex-1 rounded-full border border-line bg-white px-5 py-3.5 text-[15px] text-ink outline-none transition-colors placeholder:text-faint focus:border-primary"
+          className="min-w-0 flex-1 rounded-full border border-line bg-card px-5 py-3.5 text-[15px] text-ink outline-none transition-colors placeholder:text-faint focus:border-primary"
         />
         <button
           type="submit"

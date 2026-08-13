@@ -11,6 +11,7 @@ import MeetingPage from './pages/MeetingPage'
 import ReportPage from './pages/ReportPage'
 import KnowledgePage from './pages/KnowledgePage'
 import SearchPage from './pages/SearchPage'
+import SharedReportPage from './pages/SharedReportPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth()
@@ -43,6 +44,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/join/:roomCode" element={<JoinPage />} />
+      <Route path="/share/:token" element={<SharedReportPage />} />
       <Route
         path="/dashboard"
         element={

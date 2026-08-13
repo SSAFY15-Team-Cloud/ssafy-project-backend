@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -28,7 +29,7 @@ export function Input({
     <label className="block">
       {label && <span className="mb-1.5 block text-[13px] font-bold text-ink">{label}</span>}
       <input
-        className={`w-full rounded-[12px] border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-faint focus:border-primary ${className}`}
+        className={`w-full rounded-[12px] border border-line bg-card px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-faint focus:border-primary ${className}`}
         {...props}
       />
       {error && <span className="mt-1 block text-xs font-semibold text-danger">{error}</span>}
@@ -38,7 +39,7 @@ export function Input({
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[16px] border border-line bg-white shadow-[var(--shadow-card)] ${className}`}>
+    <div className={`rounded-[16px] border border-line bg-card shadow-[var(--shadow-card)] ${className}`}>
       {children}
     </div>
   )
@@ -84,7 +85,7 @@ export function AppHeader() {
   ] as const
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-line bg-card/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
         <Logo />
         <nav className="flex items-center gap-1 text-sm font-semibold text-muted">
@@ -103,6 +104,7 @@ export function AppHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <>
               <span className="hidden text-sm font-bold text-ink sm:block">{user.nickname}</span>
@@ -124,6 +126,27 @@ export function AppHeader() {
         </div>
       </div>
     </header>
+  )
+}
+
+export function ThemeToggle() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+
+  const toggle = () => {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      title={dark ? '라이트 모드' : '다크 모드'}
+      className="flex h-8 w-8 items-center justify-center rounded-full text-[15px] transition-colors hover:bg-surface"
+    >
+      {dark ? '☀️' : '🌙'}
+    </button>
   )
 }
 

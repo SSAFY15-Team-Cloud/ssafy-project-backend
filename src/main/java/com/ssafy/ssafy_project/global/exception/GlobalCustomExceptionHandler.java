@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -24,7 +25,8 @@ public class GlobalCustomExceptionHandler {
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
             HandlerMethodValidationException.class,
-            HttpMessageNotReadableException.class
+            HttpMessageNotReadableException.class,
+            MaxUploadSizeExceededException.class
     })
     public ResponseEntity<ErrorResponse> handleValidationException(Exception e) {
         log.debug("Request validation failed.", e);

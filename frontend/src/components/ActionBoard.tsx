@@ -89,7 +89,7 @@ export default function ActionBoard({ roomId }: { roomId: number }) {
                     key={item.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('text/plain', String(item.id))}
-                    className={`cursor-grab rounded-[10px] border border-line bg-white p-3 shadow-[0_1px_3px_rgba(23,35,70,0.05)] transition-opacity active:cursor-grabbing ${
+                    className={`cursor-grab rounded-[10px] border border-line bg-card p-3 shadow-[0_1px_3px_rgba(23,35,70,0.05)] transition-opacity active:cursor-grabbing ${
                       item.status === 'DONE' ? 'opacity-60' : ''
                     }`}
                   >

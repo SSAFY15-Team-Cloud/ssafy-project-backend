@@ -25,7 +25,7 @@ export default function LandingPage() {
   const user = useAuth((s) => s.user)
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="min-h-full bg-canvas">
       <header className="border-b border-line">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
           <Logo />
@@ -85,7 +85,7 @@ export default function LandingPage() {
             </Link>
             <Link
               to="/login"
-              className="rounded-full border border-line-strong bg-white px-7 py-3.5 text-[15px] font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary active:translate-y-0"
+              className="rounded-full border border-line-strong bg-card px-7 py-3.5 text-[15px] font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary active:translate-y-0"
             >
               초대코드로 참여
             </Link>
@@ -99,7 +99,7 @@ export default function LandingPage() {
             {FEATURES.map((feature, i) => (
               <div
                 key={feature.title}
-                className="group rounded-[16px] border border-line bg-white p-6 transition-all hover:-translate-y-1 hover:border-primary-pale hover:shadow-[var(--shadow-active)]"
+                className="group rounded-[16px] border border-line bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary-pale hover:shadow-[var(--shadow-active)]"
               >
                 <span className="font-mono text-[12px] font-bold text-faint transition-colors group-hover:text-primary">
                   0{i + 1}
@@ -112,7 +112,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-line bg-white">
+      <footer className="border-t border-line bg-card">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 text-[13px] text-faint">
           <span>© 2026 Meetiny</span>
           <span className="font-mono">local dev build</span>

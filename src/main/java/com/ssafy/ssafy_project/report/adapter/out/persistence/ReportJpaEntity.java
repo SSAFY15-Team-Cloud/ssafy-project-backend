@@ -49,4 +49,16 @@ public class ReportJpaEntity {
 
     @Column(name = "status", nullable = false)
     private boolean status;
+
+    /** 공개 공유 토큰 (null이면 공유 안 됨) */
+    @Column(name = "share_token", length = 64, unique = true)
+    private String shareToken;
+
+    public void enableShare(String token) {
+        this.shareToken = token;
+    }
+
+    public void disableShare() {
+        this.shareToken = null;
+    }
 }

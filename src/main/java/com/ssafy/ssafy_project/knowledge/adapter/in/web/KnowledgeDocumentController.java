@@ -26,7 +26,7 @@ import java.util.List;
 @RequestMapping("/api/knowledge/documents")
 public class KnowledgeDocumentController {
 
-    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 20L * 1024 * 1024;
 
     private final KnowledgeDocumentService knowledgeDocumentService;
 

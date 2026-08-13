@@ -13,7 +13,10 @@ import '@livekit/components-styles'
 import { RoomEvent, Track } from 'livekit-client'
 import type { LocalVideoTrack, RemoteParticipant } from 'livekit-client'
 import { aiApi, knowledgeApi, roomsApi } from '../lib/rooms'
-import type { CopilotAnswer, RtcToken, SpeakerStat } from '../lib/rooms'
+import type { CopilotAnswer, Poll, RtcToken, SpeakerStat } from '../lib/rooms'
+import PollPanel from '../components/PollPanel'
+import Whiteboard from '../components/Whiteboard'
+import type { WhiteboardMessage } from '../components/Whiteboard'
 import { createRoomStompClient } from '../lib/stomp'
 import type {
   ChatMessagePayload,
@@ -26,7 +29,7 @@ import { startChunkedAudioUpload } from '../lib/audioRecorder'
 import { useAuth } from '../lib/auth'
 import { CamIcon, MicIcon } from './PreJoinPage'
 
-type PanelTab = 'chat' | 'people' | 'ai'
+type PanelTab = 'chat' | 'people' | 'ai' | 'polls'
 type CaptionLang = 'ko' | 'en' | 'ja'
 type TimedTranscript = TranscriptPayload & { receivedAt: number }
 type BackgroundMode = 'none' | 'blur' | string // string = 배경 이미지 URL
@@ -34,6 +37,7 @@ type BackgroundMode = 'none' | 'blur' | string // string = 배경 이미지 URL
 type DataMessage =
   | { type: 'reaction'; emoji: string }
   | { type: 'hand'; raised: boolean }
+  | WhiteboardMessage
 
 interface FloatingReaction {
   id: number
@@ -143,6 +147,12 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [ccOn, setCcOn] = useState(true)
   const [, setCaptionTick] = useState(0) // 자막 만료 재렌더용
 
+  // 투표 / 화이트보드 / 단축키 도움말
+  const [polls, setPolls] = useState<Poll[]>([])
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const wbRemoteHandler = useRef<((message: WhiteboardMessage) => void) | null>(null)
+
   // 미티니 (AI 음성 참가자)
   const [askState, setAskState] = useState<'idle' | 'recording' | 'thinking'>('idle')
   const [voiceCard, setVoiceCard] = useState<VoiceAnswerPayload | null>(null)
@@ -159,11 +169,29 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant()
 
+  // 투표 목록 업서트 (내 투표 정보 보존 — 브로드캐스트에는 myVote가 없다)
+  const upsertPoll = useCallback((incoming: Poll) => {
+    setPolls((prev) => {
+      const existing = prev.find((poll) => poll.pollId === incoming.pollId)
+      const merged: Poll = {
+        ...incoming,
+        myVote: incoming.myVote ?? existing?.myVote ?? null,
+      }
+      return existing
+        ? prev.map((poll) => (poll.pollId === incoming.pollId ? merged : poll))
+        : [merged, ...prev]
+    })
+  }, [])
+
   // 채팅 히스토리 + 참가자 로드
   useEffect(() => {
     roomsApi
       .messages(roomId)
       .then((res) => setChatMessages(res.messages))
+      .catch(() => {})
+    roomsApi
+      .getPolls(roomId)
+      .then(setPolls)
       .catch(() => {})
     const loadParticipants = () =>
       roomsApi
@@ -188,6 +216,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
         setTranscripts((prev) => [...prev.slice(-99), { ...payload, receivedAt: Date.now() }]),
       onInsight: setInsight,
       onRecommendations: (payload) => setRecommendations(payload.documents),
+      onPoll: upsertPoll,
       onVoiceAnswer: (payload) => {
         setVoiceCard(payload)
         if (voiceCardTimerRef.current) window.clearTimeout(voiceCardTimerRef.current)
@@ -230,6 +259,9 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
             return next
           })
         }
+        if (message.type === 'wb') {
+          wbRemoteHandler.current?.(message)
+        }
       } catch {
         /* 알 수 없는 데이터 무시 */
       }
@@ -248,6 +280,14 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
       room.off(RoomEvent.ParticipantDisconnected, onLeft)
     }
   }, [room, spawnReaction])
+
+  // 화이트보드 핸들러 등록 콜백 — 안정된 identity가 아니면 보드가 리렌더마다 초기화된다
+  const registerWbRemoteHandler = useCallback((handler: (message: WhiteboardMessage) => void) => {
+    wbRemoteHandler.current = handler
+    return () => {
+      wbRemoteHandler.current = null
+    }
+  }, [])
 
   const publishData = useCallback(
     (message: DataMessage) => {
@@ -401,10 +441,57 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     if (next === 'chat') setUnread(0)
   }
 
+  // 키보드 단축키 (입력 중이 아닐 때만)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (
+        e.isComposing ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey
+      ) {
+        return
+      }
+      switch (e.key.toLowerCase()) {
+        case 'm':
+          void localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)
+          break
+        case 'c':
+          void localParticipant.setCameraEnabled(!isCameraEnabled)
+          break
+        case 's':
+          void localParticipant.setScreenShareEnabled(!isScreenShareEnabled)
+          break
+        case 'h':
+          toggleHand()
+          break
+        case 'w':
+          setWhiteboardOpen((v) => !v)
+          break
+        case '?':
+          setHelpOpen((v) => !v)
+          break
+        case 'escape':
+          setHelpOpen(false)
+          setWhiteboardOpen(false)
+          setReactionPickerOpen(false)
+          setBgPickerOpen(false)
+          break
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, myHandRaised, localParticipant])
+
   const raisedHandNames = Object.values(raisedHands)
 
   return (
-    <div className="flex h-full flex-col bg-video">
+    <div className="relative flex h-full flex-col bg-video">
       <div className="flex min-h-0 flex-1">
         {/* 비디오 그리드 + 리액션 오버레이 */}
         <div className="relative min-w-0 flex-1 p-4">
@@ -455,6 +542,15 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
             </div>
           )}
 
+          {/* 공유 화이트보드 */}
+          {whiteboardOpen && (
+            <Whiteboard
+              onPublish={publishData}
+              registerRemoteHandler={registerWbRemoteHandler}
+              onClose={() => setWhiteboardOpen(false)}
+            />
+          )}
+
           {/* CC 자막 오버레이 */}
           {visibleCaptions.length > 0 && (
             <div className="pointer-events-none absolute bottom-8 left-1/2 flex w-full max-w-[720px] -translate-x-1/2 flex-col items-center gap-1.5 px-6">
@@ -479,6 +575,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
                 [
                   ['ai', 'AI'],
                   ['chat', unread > 0 ? `채팅 (${unread})` : '채팅'],
+                  ['polls', polls.length > 0 ? `투표 ${polls.length}` : '투표'],
                   ['people', `참가자 ${participants.length}`],
                 ] as [PanelTab, string][]
               ).map(([key, label]) => (
@@ -506,6 +603,9 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
                 />
               )}
               {tab === 'chat' && <ChatPanel messages={chatMessages} myUserId={user?.userId} />}
+              {tab === 'polls' && (
+                <PollPanel roomId={roomId} myUserId={user?.userId} polls={polls} onLocalUpdate={upsertPoll} />
+              )}
               {tab === 'people' && (
                 <PeoplePanel roomId={roomId} participants={participants} raisedHands={raisedHands} />
               )}
@@ -568,6 +668,15 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
 
           <ControlButton on={ccOn} activeStyle="share" onClick={() => setCcOn((v) => !v)} label="자막 오버레이">
             <span className="text-[12px] font-black leading-none">CC</span>
+          </ControlButton>
+
+          <ControlButton
+            on={whiteboardOpen}
+            activeStyle="share"
+            onClick={() => setWhiteboardOpen((v) => !v)}
+            label="화이트보드 (W)"
+          >
+            <span className="text-[15px] leading-none">✏️</span>
           </ControlButton>
 
           {bgSupported && (
@@ -673,13 +782,57 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
           </button>
         </div>
 
-        <button
-          onClick={() => setPanelOpen((v) => !v)}
-          className="rounded-full border border-white/15 px-4 py-2 text-[12px] font-bold text-white/70 hover:bg-white/10"
-        >
-          {panelOpen ? '패널 접기' : '패널 열기'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setHelpOpen(true)}
+            title="단축키 (?)"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-[13px] font-bold text-white/70 hover:bg-white/10"
+          >
+            ?
+          </button>
+          <button
+            onClick={() => setPanelOpen((v) => !v)}
+            className="rounded-full border border-white/15 px-4 py-2 text-[12px] font-bold text-white/70 hover:bg-white/10"
+          >
+            {panelOpen ? '패널 접기' : '패널 열기'}
+          </button>
+        </div>
       </div>
+
+      {/* 단축키 도움말 */}
+      {helpOpen && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black/50"
+          onClick={() => setHelpOpen(false)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-[16px] border border-white/10 bg-[#131a3a] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-[15px] font-extrabold text-white">⌨️ 키보드 단축키</h3>
+            <ul className="space-y-2.5">
+              {(
+                [
+                  ['M', '마이크 켜기/끄기'],
+                  ['C', '카메라 켜기/끄기'],
+                  ['S', '화면공유 시작/중지'],
+                  ['H', '손들기'],
+                  ['W', '화이트보드'],
+                  ['?', '이 도움말'],
+                  ['Esc', '오버레이 닫기'],
+                ] as [string, string][]
+              ).map(([key, description]) => (
+                <li key={key} className="flex items-center justify-between text-[13px]">
+                  <span className="text-white/75">{description}</span>
+                  <kbd className="rounded-[6px] bg-white/10 px-2.5 py-1 font-mono text-[11.5px] font-bold text-white">
+                    {key}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <RoomAudioRenderer />
     </div>
@@ -823,9 +976,14 @@ function AiPanel({
     if (!q || asking) return
     setAsking(true)
     setQuestion('')
+    // 후속 질문 컨텍스트: 이전 Q&A 최근 5턴
+    const history = qaList
+      .filter((item) => item.a !== null)
+      .slice(-5)
+      .map((item) => ({ question: item.q, answer: item.a!.answer }))
     setQaList((prev) => [...prev, { q, a: null }])
     try {
-      const answer = await roomsApi.copilotAsk(roomId, q)
+      const answer = await roomsApi.copilotAsk(roomId, q, history)
       setQaList((prev) => prev.map((item, i) => (i === prev.length - 1 ? { ...item, a: answer } : item)))
     } catch {
       setQaList((prev) =>

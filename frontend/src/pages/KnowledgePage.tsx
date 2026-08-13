@@ -32,8 +32,12 @@ export default function KnowledgePage() {
     setUploadError(null)
     if (!files?.length) return
     const file = files[0]
-    if (!/\.(md|txt|markdown)$/i.test(file.name)) {
-      setUploadError('마크다운(.md) 또는 텍스트(.txt) 파일만 업로드할 수 있습니다.')
+    if (!/\.(md|txt|markdown|pdf|docx)$/i.test(file.name)) {
+      setUploadError('md / txt / pdf / docx 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('파일이 너무 큽니다 (최대 20MB).')
       return
     }
     uploadMutation.mutate(file)
@@ -62,11 +66,11 @@ export default function KnowledgePage() {
           }}
         >
           <p className="text-[15px] font-bold text-ink">문서를 끌어다 놓거나 파일을 선택하세요</p>
-          <p className="mt-1 text-[13px] text-muted">.md / .txt · 최대 5MB</p>
+          <p className="mt-1 text-[13px] text-muted">.md / .txt / .pdf / .docx · 최대 20MB</p>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".md,.txt,.markdown"
+            accept=".md,.txt,.markdown,.pdf,.docx"
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />

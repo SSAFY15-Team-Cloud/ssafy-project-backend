@@ -19,6 +19,13 @@ Zoom처럼 회의를 만들고 초대코드/딥링크로 참여하는 화상회�
 - **자막 오버레이**: 영화 자막 스타일 CC를 비디오 위에 표시 (토글)
 - **가상 배경**: 블러 + 배경 이미지 3종 (Chromium)
 - **통합 시맨틱 검색**: 내가 참여한 회의의 발화 + 위키 문서를 의미 기반으로 한 번에 검색 (`/search`)
+- **워크스페이스 홈**: 회의/발언/할일 통계 + 주간 활동 차트 + 전역 "내 할 일" 위젯
+- **실시간 투표**: 회의 중 투표 생성/투표/마감, 결과 실시간 브로드캐스트
+- **공유 화이트보드**: 회의 중 실시간 드로잉 (LiveKit 데이터 채널)
+- **회의 전 AI 브리핑**: 입장 전 지난 회의 요약 + 미완료 액션아이템
+- **다크모드 / PWA / 키보드 단축키**(M·C·S·H·W·?)
+- **위키 PDF/DOCX 지원** (Apache Tika 텍스트 추출)
+- **회의록 공개 공유 링크** (`/share/{token}`, 비로그인 열람)
 - **채팅**: STOMP 기반 회의방 채팅 (참가자 검증 포함)
 
 ## 아키텍처
@@ -129,6 +136,9 @@ cd frontend && npm run build   # 타입체크 + 빌드
 | **통합 검색** | `GET /api/search?q=` (위키 + 내 회의 발화, pgvector) |
 | **다시듣기** | `GET /api/rooms/{roomId}/replay` (세그먼트 + AI 챕터) |
 | **미티니 음성 질문** | `POST /api/rooms/{roomId}/voice-ask` (multipart audio) → STOMP `/sub/rooms/{id}/ai/voice` |
+| 워크스페이스 | `GET /api/users/me/overview` · `GET /api/rooms/{id}/briefing` |
+| 투표 | `POST/GET /api/rooms/{id}/polls` · `POST /api/polls/{id}/vote` `/close` → STOMP `/sub/rooms/{id}/polls` |
+| 회의록 공유 | `POST/DELETE /api/rooms/{id}/report/share` · `GET /api/shared/reports/{token}` (공개) |
 
 STOMP (연결: `/ws`, CONNECT 헤더 `Authorization: Bearer {accessToken}`):
 

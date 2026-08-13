@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../components/ui'
 import { useAuth } from '../lib/auth'
+import { roomsApi } from '../lib/rooms'
 
 /**
  * 회의 입장 전 장치 확인 로비.
@@ -100,7 +102,7 @@ export default function PreJoinPage() {
           </div>
         </div>
 
-        <aside className="rounded-[16px] border border-line bg-white p-6">
+        <aside className="rounded-[16px] border border-line bg-card p-6">
           <h2 className="text-[15px] font-extrabold text-ink">장치 상태</h2>
           <ul className="mt-4 space-y-3 text-[13px]">
             <StatusRow ok={!deviceError} label="카메라" detail={devices.cam} />
@@ -115,8 +117,50 @@ export default function PreJoinPage() {
           <p className="mt-4 text-[12px] leading-relaxed text-faint">
             마이크를 켜면 발화가 15초 단위로 분석되어 실시간 자막과 회의 인사이트에 사용됩니다.
           </p>
+
+          <BriefingCard roomId={Number(roomId)} />
         </aside>
       </div>
+    </div>
+  )
+}
+
+/** 입장 전 AI 브리핑: 지난 회의 요약 + 미완료 액션아이템 */
+function BriefingCard({ roomId }: { roomId: number }) {
+  const { data } = useQuery({
+    queryKey: ['briefing', roomId],
+    queryFn: () => roomsApi.briefing(roomId),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  if (!data?.lastMeetingTitle) return null
+
+  return (
+    <div className="mt-5 rounded-[12px] border border-primary-pale bg-primary-soft/50 p-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-primary-deep">🧠 지난 회의 브리핑</p>
+      <p className="mt-1.5 text-[13px] font-bold text-ink">
+        {data.lastMeetingTitle}
+        {data.lastMeetingEndedTime && (
+          <span className="ml-1.5 font-mono text-[10.5px] font-normal text-faint">
+            {new Date(data.lastMeetingEndedTime).toLocaleDateString('ko-KR')}
+          </span>
+        )}
+      </p>
+      {data.lastMeetingSummary && (
+        <p className="mt-1.5 line-clamp-4 text-[12px] leading-relaxed text-muted">{data.lastMeetingSummary}</p>
+      )}
+      {data.openActionItems.length > 0 && (
+        <div className="mt-2.5">
+          <p className="text-[10.5px] font-bold text-faint">미완료 액션아이템 {data.openActionItems.length}건</p>
+          <ul className="mt-1 space-y-1">
+            {data.openActionItems.slice(0, 3).map((item, i) => (
+              <li key={i} className="truncate text-[11.5px] text-ink/80">
+                • <span className="font-bold">{item.assignee}</span> — {item.task}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
@@ -138,7 +182,7 @@ function DeviceToggle({
       title={label}
       className={`relative flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
         on
-          ? 'border-line-strong bg-white text-ink hover:border-primary'
+          ? 'border-line-strong bg-card text-ink hover:border-primary'
           : 'border-danger/40 bg-danger/10 text-danger'
       }`}
     >

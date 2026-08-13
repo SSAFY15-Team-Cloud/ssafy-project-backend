@@ -9,9 +9,11 @@ import com.ssafy.ssafy_project.knowledge.adapter.out.persistence.KnowledgeDocume
 import com.ssafy.ssafy_project.knowledge.adapter.out.s3.KnowledgeStorageAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,9 +34,12 @@ public class KnowledgeDocumentService {
     private final KnowledgeStorageAdapter storageAdapter;
     private final OpenAiEmbeddingClient embeddingClient;
 
+    private static final int MAX_EXTRACT_CHARS = 500_000;
+    private final Tika tika = new Tika();
+
     @Transactional
     public Long upload(Long ownerId, String title, String filename, String contentType, byte[] bytes) {
-        String text = new String(bytes, StandardCharsets.UTF_8);
+        String text = extractText(filename, bytes);
         List<String> chunks = chunkText(text);
 
         if (chunks.isEmpty()) {
@@ -87,6 +92,20 @@ public class KnowledgeDocumentService {
             storageAdapter.delete(document.getObjectKey());
         } catch (Exception e) {
             log.warn("Failed to delete knowledge object from storage. objectKey={}", document.getObjectKey(), e);
+        }
+    }
+
+    /** md/txt는 그대로, PDF/DOCX 등은 Tika로 텍스트 추출 */
+    private String extractText(String filename, byte[] bytes) {
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".md") || lower.endsWith(".txt") || lower.endsWith(".markdown")) {
+            return new String(bytes, StandardCharsets.UTF_8);
+        }
+        try {
+            return tika.parseToString(new ByteArrayInputStream(bytes), new org.apache.tika.metadata.Metadata(), MAX_EXTRACT_CHARS);
+        } catch (Exception e) {
+            log.warn("Tika text extraction failed. filename={}", filename, e);
+            throw new CustomException(CommonErrorCode.VALIDATION_ERROR);
         }
     }
 

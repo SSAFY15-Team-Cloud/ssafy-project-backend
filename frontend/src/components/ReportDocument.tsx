@@ -126,7 +126,7 @@ export default function ReportDocument({
           <SectionLabel>발언자별 요약</SectionLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {speakers.map((speaker, i) => (
-              <div key={i} className="rounded-[12px] border border-line bg-white p-4">
+              <div key={i} className="rounded-[12px] border border-line bg-card p-4">
                 <p className="flex items-center gap-2 text-[13px] font-extrabold text-primary-deep">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-soft text-[11px]">
                     {speaker.name.charAt(0)}

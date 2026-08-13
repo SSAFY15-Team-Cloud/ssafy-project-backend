@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
+/* 클래스 기반 다크모드 (html.dark) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* AIVO 디자인 레퍼런스에서 정제한 토큰 */
 @theme {
+  --color-card: #ffffff;
   --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
@@ -37,6 +41,25 @@
   --shadow-card: 0 8px 20px rgba(23, 35, 70, 0.06);
   --shadow-active: 0 6px 18px rgba(82, 118, 223, 0.12);
   --shadow-modal: 0 24px 70px rgba(20, 27, 52, 0.22);
+}
+
+/* 다크모드: 토큰만 뒤집으면 앱 전체가 따라온다 */
+.dark {
+  --color-card: #161d3c;
+  --color-canvas: #0c1126;
+  --color-surface: #121936;
+  --color-surface-alt: #101630;
+  --color-ink: #e7ebf7;
+  --color-ink-strong: #ffffff;
+  --color-muted: #96a1c0;
+  --color-faint: #626e90;
+  --color-line: #222b52;
+  --color-line-strong: #2e3866;
+  --color-primary-soft: #1d2750;
+  --color-primary-pale: #263263;
+  --color-primary-deep: #a9bcff;
+  --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-active: 0 6px 18px rgba(82, 118, 223, 0.25);
 }
 
 html,

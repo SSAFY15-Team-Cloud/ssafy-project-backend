@@ -38,6 +38,10 @@ public class MeetingCopilotService {
     private final OpenAiAssistClient assistClient;
 
     public CopilotAnswer ask(Long roomId, Long userId, String question) {
+        return ask(roomId, userId, question, List.of());
+    }
+
+    public CopilotAnswer ask(Long roomId, Long userId, String question, List<HistoryTurn> history) {
         if (!findRoomParticipantPortOut.existsByRoomIdAndUserId(roomId, userId)) {
             throw new CustomException(CommonErrorCode.NOT_ROOM_PARTICIPANT);
         }
@@ -85,8 +89,29 @@ public class MeetingCopilotService {
             // 위키 검색 실패는 답변 자체를 막지 않는다 (트랜스크립트만으로 답변)
         }
 
-        String answer = assistClient.answerQuestion(room.getTitle(), transcript, wikiContext.toString(), question);
+        // 후속 질문 컨텍스트 (최근 5턴, null/과대 길이 방어)
+        StringBuilder historyText = new StringBuilder();
+        if (history != null) {
+            history.stream()
+                    .skip(Math.max(0, history.size() - 5))
+                    .filter(turn -> turn != null
+                            && turn.question() != null && !turn.question().isBlank()
+                            && turn.answer() != null && !turn.answer().isBlank())
+                    .forEach(turn -> historyText
+                            .append("Q: ").append(truncate(turn.question(), 500)).append('\n')
+                            .append("A: ").append(truncate(turn.answer(), 2000)).append("\n\n"));
+        }
+
+        String answer = assistClient.answerQuestion(
+                room.getTitle(), transcript, wikiContext.toString(), historyText.toString(), question);
         return new CopilotAnswer(answer, sources);
+    }
+
+    public record HistoryTurn(String question, String answer) {
+    }
+
+    private String truncate(String text, int max) {
+        return text.length() > max ? text.substring(0, max) : text;
     }
 
     public record CopilotAnswer(String answer, List<CopilotSource> sources) {

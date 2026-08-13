@@ -5,6 +5,7 @@ import { roomsApi } from '../lib/rooms'
 import type { MyRoomEntry } from '../lib/rooms'
 import { useAuth } from '../lib/auth'
 import { Button, Card, Input, PageShell, SectionTitle } from '../components/ui'
+import WorkspaceStats from '../components/WorkspaceStats'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -67,6 +68,8 @@ export default function DashboardPage() {
           {error}
         </div>
       )}
+
+      <WorkspaceStats />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="p-7 transition-shadow hover:shadow-[var(--shadow-active)]">

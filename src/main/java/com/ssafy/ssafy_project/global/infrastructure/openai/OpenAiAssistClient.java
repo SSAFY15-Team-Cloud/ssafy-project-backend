@@ -26,13 +26,16 @@ public class OpenAiAssistClient {
     @Value("${app.openai.insight-model:gpt-4o-mini}")
     private String model;
 
-    public String answerQuestion(String meetingTitle, String transcript, String wikiContext, String question) {
+    public String answerQuestion(String meetingTitle, String transcript, String wikiContext,
+                                 String conversationHistory, String question) {
         String system = """
                 You are a meeting copilot embedded in a live video meeting.
                 Answer the user's question using ONLY the provided meeting transcript and wiki documents.
                 If the answer is not in the provided context, say so honestly (in Korean).
                 Respond in Korean. Be concise: 3-5 sentences or a short bullet list.
                 When you use a wiki document, mention its title naturally.
+                Previous Q&A turns are provided for follow-up questions — use them to resolve references
+                like '그거', '방금 말한 것'.
                 """;
 
         String user = """
@@ -44,9 +47,17 @@ public class OpenAiAssistClient {
                 === Related wiki documents ===
                 %s
 
+                === Previous Q&A in this session ===
+                %s
+
                 === Question ===
                 %s
-                """.formatted(meetingTitle, transcript, wikiContext.isBlank() ? "(없음)" : wikiContext, question);
+                """.formatted(
+                meetingTitle,
+                transcript,
+                wikiContext.isBlank() ? "(없음)" : wikiContext,
+                conversationHistory == null || conversationHistory.isBlank() ? "(없음)" : conversationHistory,
+                question);
 
         return complete(system, user, null);
     }

@@ -41,6 +41,7 @@ public class SecurityConfig {
 
     private static final String[] whiteList = {
             "/api/auth/**",
+            "/api/shared/**",
             "/ws",
             "/ws/**"
     };

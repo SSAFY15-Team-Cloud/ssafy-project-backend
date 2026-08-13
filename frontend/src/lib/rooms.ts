@@ -80,10 +80,38 @@ export const roomsApi = {
   speakingStats: (roomId: number) =>
     api<SpeakerStat[]>(`/rooms/${roomId}/speaking-stats`),
 
-  copilotAsk: (roomId: number, question: string) =>
+  copilotAsk: (roomId: number, question: string, history?: { question: string; answer: string }[]) =>
     api<CopilotAnswer>(`/rooms/${roomId}/copilot`, {
       method: 'POST',
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, history }),
+    }),
+
+  briefing: (roomId: number) => api<Briefing>(`/rooms/${roomId}/briefing`),
+
+  overview: () => api<WorkspaceOverview>('/users/me/overview'),
+
+  createPoll: (roomId: number, question: string, options: string[]) =>
+    api<Poll>(`/rooms/${roomId}/polls`, {
+      method: 'POST',
+      body: JSON.stringify({ question, options }),
+    }),
+
+  getPolls: (roomId: number) => api<Poll[]>(`/rooms/${roomId}/polls`),
+
+  votePoll: (pollId: number, optionIndex: number) =>
+    api<Poll>(`/polls/${pollId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ optionIndex }),
+    }),
+
+  closePoll: (pollId: number) => api<Poll>(`/polls/${pollId}/close`, { method: 'POST' }),
+
+  enableReportShare: (roomId: number) =>
+    api<{ shareToken: string }>(`/rooms/${roomId}/report/share`, { method: 'POST' }),
+
+  sharedReport: (token: string) =>
+    api<{ title: string; content: string; createdTime: string }>(`/shared/reports/${token}`, {
+      skipAuth: true,
     }),
 
   myRooms: () => api<MyRoomEntry[]>('/users/me/rooms'),
@@ -138,6 +166,42 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify({ texts, targetLang }),
     }),
+}
+
+export interface Briefing {
+  lastRoomId: number | null
+  lastMeetingTitle: string | null
+  lastMeetingEndedTime: string | null
+  lastMeetingSummary: string | null
+  openActionItems: { assignee: string; task: string; due: string; status: string }[]
+}
+
+export interface WorkspaceOverview {
+  totalMeetings: number
+  totalSpeakingSeconds: number
+  totalActionItems: number
+  doneActionItems: number
+  weeklyActivity: { date: string; meetings: number }[]
+  pendingActionItems: {
+    id: number
+    roomId: number
+    roomTitle: string
+    assignee: string
+    task: string
+    due: string
+    status: string
+  }[]
+}
+
+export interface Poll {
+  pollId: number
+  creatorId: number
+  question: string
+  options: string[]
+  counts: number[]
+  totalVotes: number
+  closed: boolean
+  myVote: number | null
 }
 
 export interface ActionItem {
