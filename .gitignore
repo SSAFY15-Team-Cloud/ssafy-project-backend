@@ -70,3 +70,6 @@ hyuncheol
 # local secrets (never commit)
 src/main/resources/secrets.properties
 src/test/resources/sample-meeting-audio.ogg
+
+# electron build output
+desktop/dist/

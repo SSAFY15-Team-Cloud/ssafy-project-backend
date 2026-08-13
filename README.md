@@ -85,7 +85,9 @@ npm run dev
 
 ### 5. 데스크톱 앱 (선택)
 
-Zoom처럼 독립 창으로 쓰고 싶다면 (프론트 dev 서버가 켜져 있어야 합니다):
+Zoom처럼 독립 창으로 쓰는 Electron 앱. 카메라/마이크 권한 자동 허용, 화면공유 지원.
+
+개발 모드 (프론트 dev 서버 필요):
 
 ```bash
 cd desktop
@@ -93,7 +95,14 @@ npm install
 npm start
 ```
 
-카메라/마이크 권한 자동 허용, 화면공유 지원, 문서 다운로드는 기본 브라우저로 열립니다.
+**EXE로 패키징** (프론트 빌드를 내장하고 `/api`·`/ws`를 백엔드로 프록시하는 단일 실행파일):
+
+```bash
+cd frontend && npm run build
+cd ../desktop && npm run dist
+```
+
+→ `desktop/dist/Meetiny 1.0.0.exe` (포터블, 더블클릭 실행. 백엔드+docker 스택은 켜져 있어야 함)
 
 ### 6. 테스트
 

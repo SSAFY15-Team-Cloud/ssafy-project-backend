@@ -5,9 +5,31 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "http-proxy": "^1.18.1"
   },
   "devDependencies": {
-    "electron": "^43.4.0"
+    "electron": "^43.4.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.meetiny.desktop",
+    "productName": "Meetiny",
+    "files": [
+      "main.js",
+      "offline.html"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "app-dist"
+      }
+    ],
+    "win": {
+      "target": "portable"
+    }
   }
 }
