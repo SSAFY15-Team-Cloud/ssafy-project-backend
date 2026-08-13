@@ -51,6 +51,30 @@ public class OpenAiAssistClient {
         return complete(system, user, null);
     }
 
+    /** 번호 매긴 트랜스크립트에서 주제 전환점 챕터 JSON({"chapters":[{"title","segmentIndex"}]})을 추출한다. */
+    public String generateChaptersJson(String meetingTitle, String numberedTranscript) {
+        String system = """
+                You are analyzing a finished meeting transcript to create podcast-style chapters.
+                Each transcript line is numbered starting from 0.
+                Identify 3 to 8 topic transitions and respond in Korean with a single JSON object:
+                {"chapters": [{"title": "챕터 제목 (30자 이내)", "segmentIndex": 0}, ...]}
+                Rules:
+                - segmentIndex is the line number where the topic starts. The first chapter must start at 0.
+                - segmentIndex values must be strictly increasing.
+                - Titles must be concrete (무엇을 논의했는지), not generic like '도입부'.
+                - If the transcript is too short for multiple topics, return a single chapter.
+                """;
+
+        String user = """
+                Meeting title: %s
+
+                Numbered transcript:
+                %s
+                """.formatted(meetingTitle, numberedTranscript);
+
+        return complete(system, user, Map.of("type", "json_object"));
+    }
+
     /** 입력 순서를 유지한 번역 결과 JSON({"translations":[...]})을 반환한다. */
     public String translateJson(List<String> texts, String targetLanguage) {
         String system = """

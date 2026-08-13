@@ -60,7 +60,7 @@ docker compose up -d
 | PostgreSQL(pgvector) | **5433** | 로컬 5432 점유 회피 |
 | Redis | 6379 | |
 | RabbitMQ | 5672 / 15672(관리 UI, ssafy/ssafy) | |
-| MinIO | 9000 / 9001(콘솔, minioadmin/minioadmin) | `meeting-media` 버킷 자동 생성 |
+| MinIO | **19000** / 19001(콘솔, minioadmin/minioadmin) | `meeting-media` 버킷 자동 생성. 9000은 Windows WinNAT 예약과 충돌해 회피 |
 | LiveKit | 7880(ws) / 7881(tcp) / 7882(udp) | 키: `docker/livekit/livekit.yaml` |
 
 ### 3. 백엔드

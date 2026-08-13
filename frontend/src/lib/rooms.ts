@@ -88,6 +88,8 @@ export const roomsApi = {
 
   myRooms: () => api<MyRoomEntry[]>('/users/me/rooms'),
 
+  replay: (roomId: number) => api<ReplayResult>(`/rooms/${roomId}/replay`),
+
   report: (roomId: number) =>
     api<{ reportId: number; ownerId: number; roomId: number; content: string; createdTime: string; title: string }>(
       `/rooms/${roomId}/report`,
@@ -122,6 +124,24 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify({ texts, targetLang }),
     }),
+}
+
+export interface ReplaySegment {
+  audioId: number
+  speakerId: number
+  speakerName: string
+  text: string | null
+  mimeType: string
+  duration: number
+  startTime: string | null
+  url: string
+}
+
+export interface ReplayResult {
+  roomTitle: string
+  roomStatus: 'RUNNING' | 'ENDED'
+  segments: ReplaySegment[]
+  chapters: { title: string; segmentIndex: number }[]
 }
 
 export interface SearchResult {

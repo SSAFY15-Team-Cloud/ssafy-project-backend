@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { roomsApi } from '../lib/rooms'
 import { Card, PageShell, SectionTitle } from '../components/ui'
+import ReplayPlayer from '../components/ReplayPlayer'
 
 type ReportState =
   | { phase: 'polling'; attempts: number }
@@ -87,6 +88,8 @@ export default function ReportPage() {
           </Link>
         </Card>
       )}
+
+      {state.phase === 'done' && <ReplayPlayer roomId={roomId} />}
 
       {state.phase === 'done' && (
         <Card className="p-8">
