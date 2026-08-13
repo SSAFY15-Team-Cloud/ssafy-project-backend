@@ -85,6 +85,7 @@ async function createWindow() {
     minHeight: 640,
     backgroundColor: '#0e1530',
     title: 'Meetiny',
+    icon: path.join(__dirname, 'icon.ico'),
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

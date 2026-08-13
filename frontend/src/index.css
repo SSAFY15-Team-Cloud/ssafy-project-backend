@@ -126,6 +126,24 @@ select:focus-visible {
   animation: reaction-float 2.8s ease-out forwards;
 }
 
+/* 회의록 인쇄: 리포트 문서만 출력 */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .report-print-area,
+  .report-print-area * {
+    visibility: visible;
+  }
+  .report-print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
 /* 미티니 AI 오브 */
 .mitini-orb {
   width: 34px;

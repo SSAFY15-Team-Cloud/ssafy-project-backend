@@ -51,6 +51,28 @@ public class OpenAiAssistClient {
         return complete(system, user, null);
     }
 
+    /** 트랜스크립트에서 액션아이템 JSON({"actionItems":[{"assignee","task","due"}]})을 추출한다. */
+    public String extractActionItemsJson(String meetingTitle, String transcript) {
+        String system = """
+                You are extracting actionable tasks from a finished meeting transcript.
+                Respond in Korean with a single JSON object:
+                {"actionItems": [{"assignee": "담당자 이름 또는 미정", "task": "할 일 (60자 이내)", "due": "기한 또는 미정"}, ...]}
+                Rules:
+                - Include ONLY tasks actually supported by the transcript. Do not invent tasks.
+                - Use the speaker names that appear in the transcript for assignee when clear.
+                - Maximum 10 items. If there are none, return {"actionItems": []}.
+                """;
+
+        String user = """
+                Meeting title: %s
+
+                Transcript:
+                %s
+                """.formatted(meetingTitle, transcript);
+
+        return complete(system, user, Map.of("type", "json_object"));
+    }
+
     /** 번호 매긴 트랜스크립트에서 주제 전환점 챕터 JSON({"chapters":[{"title","segmentIndex"}]})을 추출한다. */
     public String generateChaptersJson(String meetingTitle, String numberedTranscript) {
         String system = """

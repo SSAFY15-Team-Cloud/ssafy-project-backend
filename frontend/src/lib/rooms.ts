@@ -90,6 +90,14 @@ export const roomsApi = {
 
   replay: (roomId: number) => api<ReplayResult>(`/rooms/${roomId}/replay`),
 
+  actionItems: (roomId: number) => api<ActionItem[]>(`/rooms/${roomId}/action-items`),
+
+  updateActionItemStatus: (itemId: number, status: ActionItem['status']) =>
+    api<ActionItem>(`/action-items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
   voiceAsk: (roomId: number, audio: Blob, filename: string) => {
     const form = new FormData()
     form.append('audio', audio, filename)
@@ -130,6 +138,15 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify({ texts, targetLang }),
     }),
+}
+
+export interface ActionItem {
+  id: number
+  roomId: number
+  assignee: string
+  task: string
+  due: string
+  status: 'TODO' | 'DOING' | 'DONE'
 }
 
 export interface ReplaySegment {

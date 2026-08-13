@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
 import { roomsApi } from '../lib/rooms'
 import { Card, PageShell, SectionTitle } from '../components/ui'
 import ReplayPlayer from '../components/ReplayPlayer'
+import ReportDocument from '../components/ReportDocument'
+import ActionBoard from '../components/ActionBoard'
 
 type ReportState =
   | { phase: 'polling'; attempts: number }
@@ -92,33 +93,35 @@ export default function ReportPage() {
       {state.phase === 'done' && <ReplayPlayer roomId={roomId} />}
 
       {state.phase === 'done' && (
-        <Card className="p-8">
-          <div className="mb-6 flex items-start justify-between border-b border-line pb-5">
-            <div>
-              <h1 className="text-lg font-extrabold text-ink">{state.title || '회의록'}</h1>
-              <p className="mt-1 font-mono text-[12px] text-faint">
-                {new Date(state.createdTime).toLocaleString('ko-KR')}
-              </p>
+        <>
+          <Card className="report-print-area p-8">
+            <div className="mb-6 flex items-center justify-end gap-2 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="rounded-full border border-line-strong px-4 py-2 text-[13px] font-bold text-muted hover:border-primary hover:text-primary"
+              >
+                🖨 인쇄 / PDF
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([state.content], { type: 'text/markdown;charset=utf-8' })
+                  const url = URL.createObjectURL(blob)
+                  const anchor = document.createElement('a')
+                  anchor.href = url
+                  anchor.download = `${state.title || 'meeting-report'}.md`
+                  anchor.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="rounded-full border border-line-strong px-4 py-2 text-[13px] font-bold text-muted hover:border-primary hover:text-primary"
+              >
+                .md 다운로드
+              </button>
             </div>
-            <button
-              onClick={() => {
-                const blob = new Blob([state.content], { type: 'text/markdown;charset=utf-8' })
-                const url = URL.createObjectURL(blob)
-                const anchor = document.createElement('a')
-                anchor.href = url
-                anchor.download = `${state.title || 'meeting-report'}.md`
-                anchor.click()
-                URL.revokeObjectURL(url)
-              }}
-              className="rounded-full border border-line-strong px-4 py-2 text-[13px] font-bold text-muted hover:border-primary hover:text-primary"
-            >
-              .md 다운로드
-            </button>
-          </div>
-          <article className="prose-report">
-            <ReactMarkdown>{state.content}</ReactMarkdown>
-          </article>
-        </Card>
+            <ReportDocument title={state.title} content={state.content} createdTime={state.createdTime} />
+          </Card>
+
+          <ActionBoard roomId={roomId} />
+        </>
       )}
     </PageShell>
   )

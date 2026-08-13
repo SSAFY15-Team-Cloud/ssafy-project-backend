@@ -47,10 +47,24 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 export function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <Link to="/" className="flex items-center gap-2">
-      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden>
-        <rect x="2" y="6" width="20" height="20" rx="6" fill="#5276df" />
-        <path d="M22 13.5 29 9v14l-7-4.5z" fill={dark ? '#8ea5f8' : '#263f9c'} />
-        <circle cx="12" cy="16" r="4" fill="#fff" />
+      <svg width="26" height="26" viewBox="0 0 512 512" aria-hidden>
+        <defs>
+          <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#5e7ff0" />
+            <stop offset="1" stopColor="#20308a" />
+          </linearGradient>
+          <radialGradient id="logo-orb" cx="0.35" cy="0.28" r="1">
+            <stop offset="0" stopColor="#eef1ff" />
+            <stop offset="0.45" stopColor="#a5b4fc" />
+            <stop offset="1" stopColor="#4338ca" />
+          </radialGradient>
+        </defs>
+        <rect width="512" height="512" rx="116" fill="url(#logo-bg)" />
+        <rect x="96" y="176" width="220" height="176" rx="48" fill="#ffffff" />
+        <path d="M312 240 L408 186 v156 L312 288 z" fill="#c3d0ff" />
+        <circle cx="164" cy="232" r="18" fill="#5e7ff0" />
+        <circle cx="376" cy="150" r="66" fill="url(#logo-orb)" />
+        <circle cx="376" cy="150" r="66" fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="6" />
       </svg>
       <span className={`text-[17px] font-extrabold tracking-tight ${dark ? 'text-white' : 'text-ink'}`}>
         Meetiny
