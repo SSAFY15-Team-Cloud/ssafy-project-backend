@@ -69,9 +69,12 @@ export default function DashboardPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="p-7">
-          <h3 className="text-[16px] font-extrabold text-ink">새 회의 시작</h3>
-          <p className="mt-1 text-[13px] text-muted">방을 만들면 초대코드와 딥링크가 발급됩니다.</p>
+        <Card className="p-7 transition-shadow hover:shadow-[var(--shadow-active)]">
+          <h3 className="flex items-center gap-2 text-[16px] font-extrabold text-ink">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary-soft text-[13px]">🎥</span>
+            새 회의 시작
+          </h3>
+          <p className="mt-1.5 text-[13px] text-muted">방을 만들면 초대코드와 딥링크가 발급됩니다.</p>
 
           {!createdInvite ? (
             <form onSubmit={handleCreate} className="mt-5 space-y-4">
@@ -110,9 +113,12 @@ export default function DashboardPage() {
           )}
         </Card>
 
-        <Card className="p-7">
-          <h3 className="text-[16px] font-extrabold text-ink">초대코드로 참여</h3>
-          <p className="mt-1 text-[13px] text-muted">
+        <Card className="p-7 transition-shadow hover:shadow-[var(--shadow-active)]">
+          <h3 className="flex items-center gap-2 text-[16px] font-extrabold text-ink">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary-soft text-[13px]">🔗</span>
+            초대코드로 참여
+          </h3>
+          <p className="mt-1.5 text-[13px] text-muted">
             8자리 코드를 입력하거나, 받은 초대링크를 브라우저에 붙여넣으세요.
           </p>
           <form onSubmit={handleJoin} className="mt-5 space-y-4">
@@ -171,7 +177,10 @@ function MyRoomsSection() {
       <p className="mt-1 text-[13px] text-muted">참여했던 회의와 회의록을 모아봤어요.</p>
       <ul className="mt-4 divide-y divide-line">
         {rooms.slice(0, 8).map((room) => (
-          <li key={`${room.roomId}-${room.joinedTime}`} className="flex items-center gap-3 py-3">
+          <li
+            key={`${room.roomId}-${room.joinedTime}`}
+            className="-mx-2 flex items-center gap-3 rounded-[10px] px-2 py-3 transition-colors hover:bg-surface"
+          >
             <span
               className={`h-2 w-2 shrink-0 rounded-full ${
                 room.status === 'RUNNING' ? 'bg-success' : 'bg-faint'

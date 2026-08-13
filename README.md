@@ -83,7 +83,19 @@ npm run dev
 
 → http://localhost:5173 (`/api`, `/ws`는 vite proxy로 백엔드에 연결)
 
-### 5. 테스트
+### 5. 데스크톱 앱 (선택)
+
+Zoom처럼 독립 창으로 쓰고 싶다면 (프론트 dev 서버가 켜져 있어야 합니다):
+
+```bash
+cd desktop
+npm install
+npm start
+```
+
+카메라/마이크 권한 자동 허용, 화면공유 지원, 문서 다운로드는 기본 브라우저로 열립니다.
+
+### 6. 테스트
 
 ```bash
 ./mvnw test          # 통합 테스트 (Testcontainers — Docker 필요)

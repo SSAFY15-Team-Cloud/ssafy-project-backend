@@ -63,7 +63,8 @@ export default function LandingPage() {
         }}
       >
         <div className="mx-auto max-w-[1200px] px-6 py-24 text-center">
-          <span className="inline-block rounded-full border border-primary-pale bg-primary-soft px-4 py-1.5 text-[13px] font-bold text-primary-deep">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary-pale bg-primary-soft px-4 py-1.5 text-[13px] font-bold text-primary-deep">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
             AI가 함께 앉아있는 화상회의
           </span>
           <h1 className="mx-auto mt-6 max-w-[720px] text-[44px] font-black leading-[1.15] tracking-tight text-ink-strong">
@@ -78,13 +79,13 @@ export default function LandingPage() {
           <div className="mt-9 flex items-center justify-center gap-3">
             <Link
               to={user ? '/dashboard' : '/signup'}
-              className="rounded-full bg-primary px-7 py-3.5 text-[15px] font-bold text-white shadow-[var(--shadow-active)] hover:bg-primary-hover"
+              className="rounded-full bg-primary px-7 py-3.5 text-[15px] font-bold text-white shadow-[var(--shadow-active)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[0_10px_26px_rgba(82,118,223,0.28)] active:translate-y-0"
             >
               무료로 회의 시작하기
             </Link>
             <Link
               to="/login"
-              className="rounded-full border border-line-strong bg-white px-7 py-3.5 text-[15px] font-bold text-ink hover:border-primary hover:text-primary"
+              className="rounded-full border border-line-strong bg-white px-7 py-3.5 text-[15px] font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary active:translate-y-0"
             >
               초대코드로 참여
             </Link>
@@ -96,8 +97,13 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1200px] px-6 py-20">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((feature, i) => (
-              <div key={feature.title} className="rounded-[16px] border border-line bg-white p-6">
-                <span className="font-mono text-[12px] font-bold text-faint">0{i + 1}</span>
+              <div
+                key={feature.title}
+                className="group rounded-[16px] border border-line bg-white p-6 transition-all hover:-translate-y-1 hover:border-primary-pale hover:shadow-[var(--shadow-active)]"
+              >
+                <span className="font-mono text-[12px] font-bold text-faint transition-colors group-hover:text-primary">
+                  0{i + 1}
+                </span>
                 <h3 className="mt-3 text-[16px] font-extrabold text-ink">{feature.title}</h3>
                 <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{feature.body}</p>
               </div>

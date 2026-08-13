@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { knowledgeApi, searchApi } from '../lib/rooms'
 import type { SearchResult } from '../lib/rooms'
@@ -14,6 +14,17 @@ export default function SearchPage() {
   const [result, setResult] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 공유된 검색 링크(?q=...)로 진입하면 자동 검색
+  const autoSearched = useRef(false)
+  useEffect(() => {
+    const initial = searchParams.get('q')
+    if (initial && initial.trim().length >= 2 && !autoSearched.current) {
+      autoSearched.current = true
+      void runSearch(initial)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const runSearch = async (q: string) => {
     const trimmed = q.trim()

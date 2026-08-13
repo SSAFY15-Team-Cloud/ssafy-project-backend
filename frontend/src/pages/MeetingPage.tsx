@@ -537,7 +537,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
       </div>
 
       {/* 컨트롤 바 */}
-      <div className="flex items-center justify-between border-t border-white/10 bg-[#0b1129] px-6 py-3">
+      <div className="flex items-center justify-between border-t border-white/10 bg-[#0b1129]/95 px-6 py-3 backdrop-blur">
         <span className="hidden font-mono text-[12px] text-white/40 sm:block">room #{roomId}</span>
 
         <div className="flex items-center gap-3">
@@ -555,6 +555,8 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
           >
             <CamIcon />
           </ControlButton>
+          <span className="mx-1 h-6 w-px bg-white/10" />
+
           <ControlButton
             on={isScreenShareEnabled}
             activeStyle="share"
@@ -614,6 +616,8 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
               )}
             </div>
           )}
+
+          <span className="mx-1 h-6 w-px bg-white/10" />
 
           {/* 미티니 — AI 음성 참가자 (푸시-투-토크) */}
           <button

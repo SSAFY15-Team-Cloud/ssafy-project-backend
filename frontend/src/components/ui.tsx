@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
 export function Button({
@@ -61,21 +61,32 @@ export function Logo({ dark = false }: { dark?: boolean }) {
 
 export function AppHeader() {
   const { user, logout } = useAuth()
+  const { pathname } = useLocation()
+
+  const navItems = [
+    ['/dashboard', '대시보드'],
+    ['/knowledge', '지식 위키'],
+    ['/search', '검색'],
+  ] as const
 
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
         <Logo />
         <nav className="flex items-center gap-1 text-sm font-semibold text-muted">
-          <Link to="/dashboard" className="rounded-full px-3 py-1.5 hover:bg-surface hover:text-ink">
-            대시보드
-          </Link>
-          <Link to="/knowledge" className="rounded-full px-3 py-1.5 hover:bg-surface hover:text-ink">
-            지식 위키
-          </Link>
-          <Link to="/search" className="rounded-full px-3 py-1.5 hover:bg-surface hover:text-ink">
-            검색
-          </Link>
+          {navItems.map(([to, label]) => (
+            <Link
+              key={to}
+              to={to}
+              className={`rounded-full px-3 py-1.5 transition-colors ${
+                pathname.startsWith(to)
+                  ? 'bg-primary-soft font-bold text-primary-deep'
+                  : 'hover:bg-surface hover:text-ink'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
         <div className="flex items-center gap-3">
           {user ? (
