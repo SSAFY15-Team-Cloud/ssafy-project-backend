@@ -14,6 +14,8 @@ Zoom처럼 회의를 만들고 초대코드/딥링크로 참여하는 화상회�
 - **발언 점유율**: 참가자별 발언 시간 실시간 통계 바
 - **배경 블러**: 카메라 가상 배경 처리 (Chromium)
 - **회의 분위기**: 인사이트에 무드 게이지(이모지+라벨)
+- **미티니 (AI 음성 참가자)**: 회의 중 버튼 누르고 말로 질문 → 회의록+위키 RAG 답변을 **음성으로 전 참가자에게 재생** (Whisper→GPT→TTS)
+- **회의 다시듣기 + AI 챕터**: 별도 녹화 없이 STT 오디오 청크 재조립 (저장공간 추가 0), 주제별 챕터 점프
 - **자막 오버레이**: 영화 자막 스타일 CC를 비디오 위에 표시 (토글)
 - **가상 배경**: 블러 + 배경 이미지 3종 (Chromium)
 - **통합 시맨틱 검색**: 내가 참여한 회의의 발화 + 위키 문서를 의미 기반으로 한 번에 검색 (`/search`)
@@ -104,6 +106,8 @@ cd frontend && npm run build   # 타입체크 + 빌드
 | 발언 통계 | `GET /api/rooms/{roomId}/speaking-stats` |
 | 내 회의 이력 | `GET /api/users/me/rooms` |
 | **통합 검색** | `GET /api/search?q=` (위키 + 내 회의 발화, pgvector) |
+| **다시듣기** | `GET /api/rooms/{roomId}/replay` (세그먼트 + AI 챕터) |
+| **미티니 음성 질문** | `POST /api/rooms/{roomId}/voice-ask` (multipart audio) → STOMP `/sub/rooms/{id}/ai/voice` |
 
 STOMP (연결: `/ws`, CONNECT 헤더 `Authorization: Bearer {accessToken}`):
 

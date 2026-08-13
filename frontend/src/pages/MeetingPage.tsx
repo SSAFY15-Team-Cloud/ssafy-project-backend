@@ -20,6 +20,7 @@ import type {
   InsightPayload,
   RecommendedDocument,
   TranscriptPayload,
+  VoiceAnswerPayload,
 } from '../lib/stomp'
 import { startChunkedAudioUpload } from '../lib/audioRecorder'
 import { useAuth } from '../lib/auth'
@@ -142,6 +143,14 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [ccOn, setCcOn] = useState(true)
   const [, setCaptionTick] = useState(0) // 자막 만료 재렌더용
 
+  // 미티니 (AI 음성 참가자)
+  const [askState, setAskState] = useState<'idle' | 'recording' | 'thinking'>('idle')
+  const [voiceCard, setVoiceCard] = useState<VoiceAnswerPayload | null>(null)
+  const [aiSpeaking, setAiSpeaking] = useState(false)
+  const questionRecorderRef = useRef<MediaRecorder | null>(null)
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
+  const voiceCardTimerRef = useRef<number | null>(null)
+
   const stompRef = useRef<ReturnType<typeof createRoomStompClient> | null>(null)
   const reactionSeq = useRef(0)
   const tabRef = useRef(tab)
@@ -179,6 +188,20 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
         setTranscripts((prev) => [...prev.slice(-99), { ...payload, receivedAt: Date.now() }]),
       onInsight: setInsight,
       onRecommendations: (payload) => setRecommendations(payload.documents),
+      onVoiceAnswer: (payload) => {
+        setVoiceCard(payload)
+        if (voiceCardTimerRef.current) window.clearTimeout(voiceCardTimerRef.current)
+        voiceAudioRef.current?.pause()
+        const audio = new Audio(payload.audioUrl)
+        voiceAudioRef.current = audio
+        setAiSpeaking(true)
+        audio.onended = () => {
+          setAiSpeaking(false)
+          voiceCardTimerRef.current = window.setTimeout(() => setVoiceCard(null), 6000)
+        }
+        audio.onerror = () => setAiSpeaking(false)
+        void audio.play().catch(() => setAiSpeaking(false))
+      },
     })
     stompRef.current = client
     return () => client.deactivate()
@@ -295,14 +318,56 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     : []
 
   // 마이크가 켜져 있는 동안 15초 청크 STT 업로드
+  // (미티니가 말하는 동안은 스피커 소리가 자막으로 섞이지 않게 일시 중단)
   useEffect(() => {
-    if (!isMicrophoneEnabled) return
+    if (!isMicrophoneEnabled || aiSpeaking) return
     const publication = localParticipant.getTrackPublication(Track.Source.Microphone)
     const mediaTrack = publication?.track?.mediaStreamTrack
     if (!mediaTrack) return
     const stop = startChunkedAudioUpload(roomId, mediaTrack)
     return stop
-  }, [roomId, isMicrophoneEnabled, localParticipant])
+  }, [roomId, isMicrophoneEnabled, localParticipant, aiSpeaking])
+
+  // 미티니에게 음성으로 질문 (푸시-투-토크)
+  const toggleAsk = async () => {
+    if (askState === 'thinking') return
+    if (askState === 'recording') {
+      questionRecorderRef.current?.stop()
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm'
+      const recorder = new MediaRecorder(stream, { mimeType })
+      questionRecorderRef.current = recorder
+      const parts: Blob[] = []
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) parts.push(e.data)
+      }
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(parts, { type: mimeType })
+        if (blob.size < 2_000) {
+          setAskState('idle')
+          return
+        }
+        setAskState('thinking')
+        roomsApi
+          .voiceAsk(roomId, blob, 'question.webm')
+          .catch(() => {})
+          .finally(() => setAskState('idle'))
+      }
+      recorder.start()
+      setAskState('recording')
+      window.setTimeout(() => {
+        if (recorder.state !== 'inactive') recorder.stop()
+      }, 20_000)
+    } catch {
+      setAskState('idle')
+    }
+  }
 
   const tracks = useTracks(
     [
@@ -367,6 +432,26 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
           {raisedHandNames.length > 0 && (
             <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-[#f59e0b]/90 px-4 py-1.5 text-[13px] font-bold text-white shadow-lg">
               ✋ {raisedHandNames.join(', ')}
+            </div>
+          )}
+
+          {/* 미티니 답변 카드 */}
+          {voiceCard && (
+            <div className="absolute left-1/2 top-16 z-10 w-full max-w-[460px] -translate-x-1/2 rounded-[16px] border border-white/10 bg-[#131a3a]/95 p-4 shadow-2xl backdrop-blur">
+              <div className="flex items-center gap-3">
+                <span className={`mitini-orb ${aiSpeaking ? 'mitini-orb-speaking' : ''}`} />
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-extrabold text-[#a9bcff]">
+                    미티니 {aiSpeaking && <span className="font-semibold text-white/50">· 말하는 중</span>}
+                  </p>
+                  <p className="truncate text-[11.5px] text-white/45">
+                    {voiceCard.askedBy}님의 질문 — {voiceCard.question}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2.5 max-h-44 overflow-y-auto whitespace-pre-wrap text-[13px] leading-relaxed text-white/90">
+                {voiceCard.answer}
+              </p>
             </div>
           )}
 
@@ -529,6 +614,22 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
               )}
             </div>
           )}
+
+          {/* 미티니 — AI 음성 참가자 (푸시-투-토크) */}
+          <button
+            onClick={() => void toggleAsk()}
+            title="미티니에게 음성으로 질문"
+            className={`flex h-11 items-center gap-2 rounded-full px-4 text-[12.5px] font-bold text-white transition-all ${
+              askState === 'recording'
+                ? 'bg-danger'
+                : askState === 'thinking'
+                  ? 'bg-[#5a3ec8] opacity-80'
+                  : 'bg-gradient-to-br from-[#6d87e8] to-[#4338ca] hover:brightness-110'
+            }`}
+          >
+            <span className={`mitini-orb-sm ${askState === 'recording' ? 'animate-pulse' : ''}`} />
+            {askState === 'recording' ? '듣는 중… (탭해서 완료)' : askState === 'thinking' ? '생각 중…' : '미티니'}
+          </button>
 
           <ControlButton on={myHandRaised} activeStyle="hand" onClick={toggleHand} label="손들기">
             <span className="text-[17px] leading-none">✋</span>

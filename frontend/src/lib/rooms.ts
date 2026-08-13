@@ -90,6 +90,12 @@ export const roomsApi = {
 
   replay: (roomId: number) => api<ReplayResult>(`/rooms/${roomId}/replay`),
 
+  voiceAsk: (roomId: number, audio: Blob, filename: string) => {
+    const form = new FormData()
+    form.append('audio', audio, filename)
+    return api(`/rooms/${roomId}/voice-ask`, { method: 'POST', body: form })
+  },
+
   report: (roomId: number) =>
     api<{ reportId: number; ownerId: number; roomId: number; content: string; createdTime: string; title: string }>(
       `/rooms/${roomId}/report`,

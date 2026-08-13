@@ -8,6 +8,7 @@ export interface RoomStompHandlers {
   onTranscript?: (payload: TranscriptPayload) => void
   onInsight?: (payload: InsightPayload) => void
   onRecommendations?: (payload: RecommendationPayload) => void
+  onVoiceAnswer?: (payload: VoiceAnswerPayload) => void
   onConnected?: () => void
   onDisconnected?: () => void
 }
@@ -55,6 +56,15 @@ export interface RecommendationPayload {
   documents: RecommendedDocument[]
 }
 
+export interface VoiceAnswerPayload {
+  question: string
+  answer: string
+  sources: { documentId: number; title: string; score: number }[]
+  audioUrl: string
+  askedBy: string
+  answeredTime: string
+}
+
 export function createRoomStompClient(roomId: number, handlers: RoomStompHandlers) {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
   const client = new Client({
@@ -83,6 +93,9 @@ export function createRoomStompClient(roomId: number, handlers: RoomStompHandler
       })
       subscribe(`/sub/rooms/${roomId}/ai/recommendations`, (message) => {
         handlers.onRecommendations?.(JSON.parse(message.body))
+      })
+      subscribe(`/sub/rooms/${roomId}/ai/voice`, (message) => {
+        handlers.onVoiceAnswer?.(JSON.parse(message.body))
       })
 
       handlers.onConnected?.()
