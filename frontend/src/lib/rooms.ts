@@ -124,6 +124,28 @@ export const aiApi = {
     }),
 }
 
+export interface SearchResult {
+  wiki: {
+    documentId: number
+    title: string
+    filename: string
+    snippet: string
+    score: number
+  }[]
+  meetings: {
+    roomId: number
+    roomTitle: string
+    speakerName: string
+    snippet: string
+    spokeTime: string | null
+    score: number
+  }[]
+}
+
+export const searchApi = {
+  search: (query: string) => api<SearchResult>(`/search?q=${encodeURIComponent(query)}`),
+}
+
 export interface KnowledgeDocument {
   documentId: number
   ownerId: number

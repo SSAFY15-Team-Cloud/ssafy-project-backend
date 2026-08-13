@@ -10,6 +10,7 @@ import PreJoinPage from './pages/PreJoinPage'
 import MeetingPage from './pages/MeetingPage'
 import ReportPage from './pages/ReportPage'
 import KnowledgePage from './pages/KnowledgePage'
+import SearchPage from './pages/SearchPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth()
@@ -79,6 +80,14 @@ export default function App() {
         element={
           <RequireAuth>
             <KnowledgePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <RequireAuth>
+            <SearchPage />
           </RequireAuth>
         }
       />

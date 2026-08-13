@@ -73,6 +73,9 @@ export function AppHeader() {
           <Link to="/knowledge" className="rounded-full px-3 py-1.5 hover:bg-surface hover:text-ink">
             지식 위키
           </Link>
+          <Link to="/search" className="rounded-full px-3 py-1.5 hover:bg-surface hover:text-ink">
+            검색
+          </Link>
         </nav>
         <div className="flex items-center gap-3">
           {user ? (

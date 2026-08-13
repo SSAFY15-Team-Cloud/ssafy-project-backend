@@ -27,6 +27,8 @@ import { CamIcon, MicIcon } from './PreJoinPage'
 
 type PanelTab = 'chat' | 'people' | 'ai'
 type CaptionLang = 'ko' | 'en' | 'ja'
+type TimedTranscript = TranscriptPayload & { receivedAt: number }
+type BackgroundMode = 'none' | 'blur' | string // string = 배경 이미지 URL
 
 type DataMessage =
   | { type: 'reaction'; emoji: string }
@@ -40,6 +42,14 @@ interface FloatingReaction {
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '😮']
+
+const BACKGROUNDS: { label: string; url: string; thumb: string }[] = [
+  { label: '그라데이션', url: '/backgrounds/bg-gradient.svg', thumb: 'linear-gradient(135deg,#5276df,#263f9c)' },
+  { label: '오피스', url: '/backgrounds/bg-office.svg', thumb: 'linear-gradient(135deg,#f5f0e8,#d8cfc0)' },
+  { label: '숲', url: '/backgrounds/bg-forest.svg', thumb: 'linear-gradient(135deg,#1d4d3a,#3d8b64)' },
+]
+
+const CAPTION_TTL_MS = 8_000
 
 export default function MeetingPage() {
   const { roomId: roomIdParam } = useParams<{ roomId: string }>()
@@ -113,7 +123,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [tab, setTab] = useState<PanelTab>('ai')
   const [panelOpen, setPanelOpen] = useState(true)
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
-  const [transcripts, setTranscripts] = useState<TranscriptPayload[]>([])
+  const [transcripts, setTranscripts] = useState<TimedTranscript[]>([])
   const [insight, setInsight] = useState<InsightPayload | null>(null)
   const [recommendations, setRecommendations] = useState<RecommendedDocument[]>([])
   const [participants, setParticipants] = useState<{ userId: number; nickname: string }[]>([])
@@ -126,8 +136,11 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false)
   const [raisedHands, setRaisedHands] = useState<Record<string, string>>({}) // identity → name
   const [myHandRaised, setMyHandRaised] = useState(false)
-  const [blurOn, setBlurOn] = useState(false)
-  const [blurBusy, setBlurBusy] = useState(false)
+  const [bgMode, setBgMode] = useState<BackgroundMode>('none')
+  const [bgBusy, setBgBusy] = useState(false)
+  const [bgPickerOpen, setBgPickerOpen] = useState(false)
+  const [ccOn, setCcOn] = useState(true)
+  const [, setCaptionTick] = useState(0) // 자막 만료 재렌더용
 
   const stompRef = useRef<ReturnType<typeof createRoomStompClient> | null>(null)
   const reactionSeq = useRef(0)
@@ -162,7 +175,8 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
       },
       onChatDeleted: ({ messageId }) =>
         setChatMessages((prev) => prev.filter((m) => m.messageId !== messageId)),
-      onTranscript: (payload) => setTranscripts((prev) => [...prev.slice(-99), payload]),
+      onTranscript: (payload) =>
+        setTranscripts((prev) => [...prev.slice(-99), { ...payload, receivedAt: Date.now() }]),
       onInsight: setInsight,
       onRecommendations: (payload) => setRecommendations(payload.documents),
     })
@@ -240,29 +254,45 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     })
   }
 
-  // 배경 블러 (Chromium 계열만 지원)
-  const blurSupported = typeof window !== 'undefined' && 'MediaStreamTrackProcessor' in window
-  const toggleBlur = async () => {
-    if (blurBusy || !isCameraEnabled) return
-    setBlurBusy(true)
+  // 가상 배경: 없음 / 블러 / 이미지 (Chromium 계열만 지원)
+  const bgSupported = typeof window !== 'undefined' && 'MediaStreamTrackProcessor' in window
+  const applyBackground = async (mode: BackgroundMode) => {
+    if (bgBusy || !isCameraEnabled) return
+    setBgBusy(true)
+    setBgPickerOpen(false)
     try {
       const publication = localParticipant.getTrackPublication(Track.Source.Camera)
       const track = publication?.track as LocalVideoTrack | undefined
       if (!track) return
-      if (blurOn) {
+      if (mode === 'none') {
         await track.stopProcessor()
-        setBlurOn(false)
-      } else {
+      } else if (mode === 'blur') {
         const { BackgroundBlur } = await import('@livekit/track-processors')
+        await track.stopProcessor()
         await track.setProcessor(BackgroundBlur(10))
-        setBlurOn(true)
+      } else {
+        const { VirtualBackground } = await import('@livekit/track-processors')
+        await track.stopProcessor()
+        await track.setProcessor(VirtualBackground(mode))
       }
+      setBgMode(mode)
     } catch (e) {
-      console.warn('background blur failed', e)
+      console.warn('virtual background failed', e)
     } finally {
-      setBlurBusy(false)
+      setBgBusy(false)
     }
   }
+
+  // CC 오버레이: 만료 자막 정리를 위해 켜져있는 동안 주기 재렌더
+  useEffect(() => {
+    if (!ccOn) return
+    const interval = setInterval(() => setCaptionTick((n) => n + 1), 2000)
+    return () => clearInterval(interval)
+  }, [ccOn])
+
+  const visibleCaptions = ccOn
+    ? transcripts.filter((t) => Date.now() - t.receivedAt < CAPTION_TTL_MS).slice(-3)
+    : []
 
   // 마이크가 켜져 있는 동안 15초 청크 STT 업로드
   useEffect(() => {
@@ -337,6 +367,21 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
           {raisedHandNames.length > 0 && (
             <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-[#f59e0b]/90 px-4 py-1.5 text-[13px] font-bold text-white shadow-lg">
               ✋ {raisedHandNames.join(', ')}
+            </div>
+          )}
+
+          {/* CC 자막 오버레이 */}
+          {visibleCaptions.length > 0 && (
+            <div className="pointer-events-none absolute bottom-8 left-1/2 flex w-full max-w-[720px] -translate-x-1/2 flex-col items-center gap-1.5 px-6">
+              {visibleCaptions.map((caption) => (
+                <p
+                  key={caption.audioId}
+                  className="rounded-[10px] bg-black/65 px-4 py-1.5 text-center text-[15px] font-semibold leading-relaxed text-white shadow-lg backdrop-blur-sm"
+                >
+                  <span className="mr-1.5 text-[#8ea5f8]">{caption.speakerName}</span>
+                  {caption.text}
+                </p>
+              ))}
             </div>
           )}
         </div>
@@ -434,15 +479,55 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
             <ShareIcon />
           </ControlButton>
 
-          {blurSupported && (
-            <ControlButton
-              on={blurOn}
-              activeStyle="share"
-              onClick={() => void toggleBlur()}
-              label="배경 블러"
-            >
-              <BlurIcon />
-            </ControlButton>
+          <ControlButton on={ccOn} activeStyle="share" onClick={() => setCcOn((v) => !v)} label="자막 오버레이">
+            <span className="text-[12px] font-black leading-none">CC</span>
+          </ControlButton>
+
+          {bgSupported && (
+            <div className="relative">
+              <ControlButton
+                on={bgMode !== 'none'}
+                activeStyle="share"
+                onClick={() => setBgPickerOpen((v) => !v)}
+                label="가상 배경"
+              >
+                <BlurIcon />
+              </ControlButton>
+              {bgPickerOpen && (
+                <div className="absolute bottom-14 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-[14px] bg-[#1c2547] px-3 py-2.5 shadow-xl">
+                  <BgOption
+                    label="없음"
+                    active={bgMode === 'none'}
+                    disabled={bgBusy}
+                    onClick={() => void applyBackground('none')}
+                  >
+                    <span className="text-[11px] font-bold text-white/70">없음</span>
+                  </BgOption>
+                  <BgOption
+                    label="블러"
+                    active={bgMode === 'blur'}
+                    disabled={bgBusy}
+                    onClick={() => void applyBackground('blur')}
+                  >
+                    <span
+                      className="h-full w-full rounded-[8px]"
+                      style={{ background: 'linear-gradient(135deg,#9aa7c7,#5a6788)', filter: 'blur(1.5px)' }}
+                    />
+                  </BgOption>
+                  {BACKGROUNDS.map((bg) => (
+                    <BgOption
+                      key={bg.url}
+                      label={bg.label}
+                      active={bgMode === bg.url}
+                      disabled={bgBusy}
+                      onClick={() => void applyBackground(bg.url)}
+                    >
+                      <span className="h-full w-full rounded-[8px]" style={{ background: bg.thumb }} />
+                    </BgOption>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           <ControlButton on={myHandRaised} activeStyle="hand" onClick={toggleHand} label="손들기">
@@ -527,6 +612,33 @@ function ControlButton({
       {activeStyle === 'device' && !on && (
         <span className="absolute h-[2px] w-6 rotate-45 rounded bg-danger" />
       )}
+    </button>
+  )
+}
+
+function BgOption({
+  label,
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string
+  active: boolean
+  disabled: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`flex h-12 w-16 items-center justify-center overflow-hidden rounded-[10px] border-2 transition-colors disabled:opacity-50 ${
+        active ? 'border-[#8ea5f8]' : 'border-white/10 hover:border-white/40'
+      } bg-white/5`}
+    >
+      {children}
     </button>
   )
 }
