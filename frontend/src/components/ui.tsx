@@ -82,6 +82,7 @@ export function AppHeader() {
     ['/dashboard', '대시보드'],
     ['/knowledge', '지식 위키'],
     ['/search', '검색'],
+    ['/braille/review', '점자 복습'],
   ] as const
 
   return (

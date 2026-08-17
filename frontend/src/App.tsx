@@ -12,6 +12,7 @@ import ReportPage from './pages/ReportPage'
 import KnowledgePage from './pages/KnowledgePage'
 import SearchPage from './pages/SearchPage'
 import SharedReportPage from './pages/SharedReportPage'
+import BrailleReviewPage from './pages/BrailleReviewPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth()
@@ -90,6 +91,14 @@ export default function App() {
         element={
           <RequireAuth>
             <SearchPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/braille/review"
+        element={
+          <RequireAuth>
+            <BrailleReviewPage />
           </RequireAuth>
         }
       />

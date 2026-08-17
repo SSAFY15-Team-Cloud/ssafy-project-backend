@@ -10,8 +10,35 @@ export interface RoomStompHandlers {
   onRecommendations?: (payload: RecommendationPayload) => void
   onVoiceAnswer?: (payload: VoiceAnswerPayload) => void
   onPoll?: (payload: PollBroadcast) => void
+  onBrailleProblem?: (payload: BrailleProblemBroadcast) => void
+  onBrailleBoard?: (payload: BrailleBoardEvent) => void
   onConnected?: () => void
   onDisconnected?: () => void
+}
+
+export interface BrailleProblemBroadcast {
+  problemId: number
+  roomId: number | null
+  creatorId: number
+  text: string
+  cellCount: number
+  reviewJamos: string | null
+  solved: boolean
+  answerUnicode: string | null
+  createdTime: string
+}
+
+/** 절대값 누적치(멱등 병합용). 강사 세션에만 전달된다. */
+export interface BrailleBoardEvent {
+  problemId: number
+  userId: number
+  name: string
+  correct: boolean
+  accuracy: number
+  attempts: number
+  solved: boolean
+  bestAccuracy: number
+  firstCorrect: boolean
 }
 
 export interface ChatMessagePayload {
@@ -111,6 +138,13 @@ export function createRoomStompClient(roomId: number, handlers: RoomStompHandler
       })
       subscribe(`/sub/rooms/${roomId}/polls`, (message) => {
         handlers.onPoll?.(JSON.parse(message.body))
+      })
+      subscribe(`/sub/rooms/${roomId}/braille`, (message) => {
+        handlers.onBrailleProblem?.(JSON.parse(message.body))
+      })
+      // 학습자별 채점 결과는 강사에게만 (user destination)
+      subscribe(`/user/sub/rooms/${roomId}/braille/board`, (message) => {
+        handlers.onBrailleBoard?.(JSON.parse(message.body))
       })
 
       handlers.onConnected?.()

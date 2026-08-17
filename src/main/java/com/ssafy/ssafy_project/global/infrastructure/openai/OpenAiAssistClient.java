@@ -3,9 +3,12 @@ package com.ssafy.ssafy_project.global.infrastructure.openai;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +21,16 @@ public class OpenAiAssistClient {
 
     private final RestClient restClient = RestClient.builder()
             .baseUrl("https://api.openai.com/v1")
+            .requestFactory(timeoutFactory())
             .build();
+
+    /** LLM 응답 지연이 호출 스레드/커넥션을 무한정 잡지 않도록 타임아웃을 둔다 */
+    private static JdkClientHttpRequestFactory timeoutFactory() {
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build());
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return factory;
+    }
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -104,6 +116,26 @@ public class OpenAiAssistClient {
                 Numbered transcript:
                 %s
                 """.formatted(meetingTitle, numberedTranscript);
+
+        return complete(system, user, Map.of("type", "json_object"));
+    }
+
+    /** 취약 자모를 겨냥한 점자 복습 단어 후보 JSON({"words":["...", ...]})을 생성한다. */
+    public String generateBrailleReviewWordsJson(List<String> weakJamos, int count) {
+        String system = """
+                You are creating Korean braille practice words for a learner who struggles
+                with specific jamos (Korean letter components).
+                Respond with a single JSON object: {"words": ["단어", ...]}
+                Rules:
+                - Exactly %d candidate words, each a common Korean word of 1-4 syllables.
+                - Words must consist of Hangul syllables ONLY (no digits, Latin letters, spaces, or punctuation).
+                - Each word MUST contain at least one of the target jamos, in any position
+                  (초성, 중성, or 받침).
+                - Prefer concrete everyday nouns a beginner would know (e.g. 사과, 나무).
+                - Do not repeat words.
+                """.formatted(count);
+
+        String user = "Target jamos: " + String.join(", ", weakJamos);
 
         return complete(system, user, Map.of("type", "json_object"));
     }

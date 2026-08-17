@@ -15,10 +15,14 @@ import type { LocalVideoTrack, RemoteParticipant } from 'livekit-client'
 import { aiApi, knowledgeApi, roomsApi } from '../lib/rooms'
 import type { CopilotAnswer, Poll, RtcToken, SpeakerStat } from '../lib/rooms'
 import PollPanel from '../components/PollPanel'
+import BraillePanel from '../components/BraillePanel'
 import Whiteboard from '../components/Whiteboard'
 import type { WhiteboardMessage } from '../components/Whiteboard'
+import { brailleApi } from '../lib/braille'
+import type { BrailleProblem } from '../lib/braille'
 import { createRoomStompClient } from '../lib/stomp'
 import type {
+  BrailleBoardEvent,
   ChatMessagePayload,
   InsightPayload,
   RecommendedDocument,
@@ -29,7 +33,7 @@ import { startChunkedAudioUpload } from '../lib/audioRecorder'
 import { useAuth } from '../lib/auth'
 import { CamIcon, MicIcon } from './PreJoinPage'
 
-type PanelTab = 'chat' | 'people' | 'ai' | 'polls'
+type PanelTab = 'chat' | 'people' | 'ai' | 'polls' | 'braille'
 type CaptionLang = 'ko' | 'en' | 'ja'
 type TimedTranscript = TranscriptPayload & { receivedAt: number }
 type BackgroundMode = 'none' | 'blur' | string // string = 배경 이미지 URL
@@ -147,6 +151,11 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
   const [ccOn, setCcOn] = useState(true)
   const [, setCaptionTick] = useState(0) // 자막 만료 재렌더용
 
+  // 점자 수업 (실시간 강의 플랫폼)
+  const [brailleProblems, setBrailleProblems] = useState<BrailleProblem[]>([])
+  const [brailleEvent, setBrailleEvent] = useState<(BrailleBoardEvent & { seq: number }) | null>(null)
+  const brailleSeq = useRef(0)
+
   // 투표 / 화이트보드 / 단축키 도움말
   const [polls, setPolls] = useState<Poll[]>([])
   const [whiteboardOpen, setWhiteboardOpen] = useState(false)
@@ -183,15 +192,57 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
     })
   }, [])
 
+  // 점자 문제 업서트 — 브로드캐스트에는 answerUnicode/solved가 빠져 있어 로컬 값을 보존한다
+  const upsertBrailleProblem = useCallback((incoming: BrailleProblem) => {
+    setBrailleProblems((prev) => {
+      const existing = prev.find((p) => p.problemId === incoming.problemId)
+      const merged: BrailleProblem = {
+        ...incoming,
+        solved: incoming.solved || (existing?.solved ?? false),
+        answerUnicode: incoming.answerUnicode ?? existing?.answerUnicode ?? null,
+      }
+      return existing
+        ? prev.map((p) => (p.problemId === merged.problemId ? merged : p))
+        : [merged, ...prev]
+    })
+  }, [])
+
   // 채팅 히스토리 + 참가자 로드
   useEffect(() => {
     roomsApi
       .messages(roomId)
       .then((res) => setChatMessages(res.messages))
       .catch(() => {})
+    // 초기 fetch가 STOMP 브로드캐스트보다 늦게 도착해도 로컬 상태를 잃지 않도록 병합한다
     roomsApi
       .getPolls(roomId)
-      .then(setPolls)
+      .then((fetched) =>
+        setPolls((prev) => {
+          const prevById = new Map(prev.map((poll) => [poll.pollId, poll]))
+          const merged = fetched.map((poll) => {
+            const local = prevById.get(poll.pollId)
+            return local ? { ...poll, myVote: poll.myVote ?? local.myVote ?? null } : poll
+          })
+          const fetchedIds = new Set(fetched.map((poll) => poll.pollId))
+          return [...prev.filter((poll) => !fetchedIds.has(poll.pollId)), ...merged]
+        }),
+      )
+      .catch(() => {})
+    brailleApi
+      .problems(roomId)
+      .then((fetched) =>
+        setBrailleProblems((prev) => {
+          const prevById = new Map(prev.map((p) => [p.problemId, p]))
+          const merged = fetched.map((p) => {
+            const local = prevById.get(p.problemId)
+            return local
+              ? { ...p, solved: p.solved || local.solved, answerUnicode: p.answerUnicode ?? local.answerUnicode }
+              : p
+          })
+          const fetchedIds = new Set(fetched.map((p) => p.problemId))
+          return [...prev.filter((p) => !fetchedIds.has(p.problemId)), ...merged]
+        }),
+      )
       .catch(() => {})
     const loadParticipants = () =>
       roomsApi
@@ -217,6 +268,9 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
       onInsight: setInsight,
       onRecommendations: (payload) => setRecommendations(payload.documents),
       onPoll: upsertPoll,
+      onBrailleProblem: upsertBrailleProblem,
+      onBrailleBoard: (payload) =>
+        setBrailleEvent({ ...payload, seq: ++brailleSeq.current }),
       onVoiceAnswer: (payload) => {
         setVoiceCard(payload)
         if (voiceCardTimerRef.current) window.clearTimeout(voiceCardTimerRef.current)
@@ -450,6 +504,8 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'SELECT' ||
+        target.closest('[role="application"]') !== null || // 점자 키패드 등 자체 키 처리 영역
+
         e.metaKey ||
         e.ctrlKey ||
         e.altKey
@@ -576,6 +632,7 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
                   ['ai', 'AI'],
                   ['chat', unread > 0 ? `채팅 (${unread})` : '채팅'],
                   ['polls', polls.length > 0 ? `투표 ${polls.length}` : '투표'],
+                  ['braille', brailleProblems.length > 0 ? `점자 ${brailleProblems.length}` : '점자'],
                   ['people', `참가자 ${participants.length}`],
                 ] as [PanelTab, string][]
               ).map(([key, label]) => (
@@ -605,6 +662,14 @@ function MeetingRoomInner({ roomId }: { roomId: number }) {
               {tab === 'chat' && <ChatPanel messages={chatMessages} myUserId={user?.userId} />}
               {tab === 'polls' && (
                 <PollPanel roomId={roomId} myUserId={user?.userId} polls={polls} onLocalUpdate={upsertPoll} />
+              )}
+              {tab === 'braille' && (
+                <BraillePanel
+                  roomId={roomId}
+                  problems={brailleProblems}
+                  onLocalUpdate={upsertBrailleProblem}
+                  lastBoardEvent={brailleEvent}
+                />
               )}
               {tab === 'people' && (
                 <PeoplePanel roomId={roomId} participants={participants} raisedHands={raisedHands} />

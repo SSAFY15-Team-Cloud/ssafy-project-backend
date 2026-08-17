@@ -28,6 +28,18 @@ Zoom처럼 회의를 만들고 초대코드/딥링크로 참여하는 화상회�
 - **회의록 공개 공유 링크** (`/share/{token}`, 비로그인 열람)
 - **채팅**: STOMP 기반 회의방 채팅 (참가자 검증 포함)
 
+## 점자 실시간 강의 플랫폼 (`feature/braille-live-class`)
+
+시각장애인 점자 학습을 위한 실시간 강의 확장. 한국 점자 규정(정자) 기반.
+
+- **한글→점자 변환 엔진**: 초성/중성/종성 분해 → 6점 점형 매핑 (초성 ㅇ 생략, 된소리표, 수표, 겹받침, 두 칸 모음). 셀마다 출처 자모 태깅
+- **점 단위 채점**: 비트 연산으로 누락점(C&~U)/추가점(U&~C)을 점 번호 단위로 판별 → "2번째 칸, 6점 누락" 수준의 피드백
+- **6점 키패드**: 실제 점자 셀 배치(2열×3행) + 퍼킨스 자판(F·D·S / J·K·L) + 점 토글 TTS + 모바일 진동
+- **수업 흐름**: 강사가 회의실 '점자' 탭에서 출제 → 학습자에게 STOMP 브로드캐스트(정답 숨김) → TTS 문제 낭독 → 풀이 제출 → 강사 실시간 채점 보드 갱신
+- **자모별 숙련도 (EMA)**: 풀이마다 자모 단위 정오를 지수이동평균(0.7/0.3)으로 누적, 우선순위 = (1−숙련도)×오답률×최근성
+- **AI 복습**: 취약 자모를 겨냥한 단어를 LLM이 생성 → 변환 엔진으로 규칙 검증(변환 가능 + 타깃 자모 포함) → 통과분만 출제, 부족하면 자모 드릴 음절 폴백 (`/braille/review`)
+- **아두이노 촉각 디스플레이**: Web Serial로 현재 칸 점형을 `SET <0-63>` 프로토콜 출력 (선택 연결)
+
 ## 아키텍처
 
 ```
@@ -139,6 +151,8 @@ cd frontend && npm run build   # 타입체크 + 빌드
 | 워크스페이스 | `GET /api/users/me/overview` · `GET /api/rooms/{id}/briefing` |
 | 투표 | `POST/GET /api/rooms/{id}/polls` · `POST /api/polls/{id}/vote` `/close` → STOMP `/sub/rooms/{id}/polls` |
 | 회의록 공유 | `POST/DELETE /api/rooms/{id}/report/share` · `GET /api/shared/reports/{token}` (공개) |
+| **점자 수업** | `GET .../braille/context` · `POST/GET /api/rooms/{id}/braille/problems` (출제는 호스트만) · `GET .../braille/board` |
+| **점자 풀이/복습** | `POST /api/braille/problems/{id}/attempts` `{cells[]}` · `GET /api/braille/skills/me` · `POST /api/braille/review/generate` · `GET /api/braille/review` |
 
 STOMP (연결: `/ws`, CONNECT 헤더 `Authorization: Bearer {accessToken}`):
 
@@ -150,6 +164,8 @@ STOMP (연결: `/ws`, CONNECT 헤더 `Authorization: Bearer {accessToken}`):
 | `/sub/rooms/{roomId}/transcripts` | 실시간 자막 |
 | `/sub/rooms/{roomId}/ai/insights` | 롤링 요약/액션아이템 |
 | `/sub/rooms/{roomId}/ai/recommendations` | 관련 문서 추천 |
+| `/sub/rooms/{roomId}/braille` | 점자 문제 출제 알림 (정답 미포함) |
+| `/sub/rooms/{roomId}/braille/board` | 점자 풀이 실시간 보드 이벤트 |
 
 ## 운영 전 챙길 것
 
